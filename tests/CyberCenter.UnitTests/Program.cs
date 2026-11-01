@@ -23,7 +23,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 6 STORE & KITCHEN KDS) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 7 FINANCE & ACCOUNTING) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -100,6 +100,11 @@ public class Program
         RunTest("Orders: Create station order deducts inventory stock and computes total", Test_Orders_CreateOrder_DeductsStockAndCalculatesTotal);
         RunTest("Orders: Exceeding product stock is rejected with BadRequest", Test_Orders_InsufficientStock_RejectedWithBadRequest);
         RunTest("Orders: KDS order status transitions between New, Preparing, and Delivered", Test_Orders_UpdateStatus_TransitionsToPreparingAndDelivered);
+
+        // 16. Phase 7: Accounting, Finance & Closing Tests
+        RunTest("Finance: Record operational expense updates ledger and audit trail", Test_Finance_CreateExpense_RecordsLedgerAndAudit);
+        RunTest("Finance: Summary accurately computes Gross Revenue, Expenses, and Net Profit", Test_Finance_GetSummary_CalculatesPnlAndNetProfit);
+        RunTest("Finance: Lock monthly closing secures period and prevents duplicate closing", Test_Finance_LockMonthlyClosing_SecuresMonthAgainstModification);
 
         stopwatch.Stop();
 
@@ -1048,5 +1053,78 @@ public class Program
         var kdsOrders = (List<OrderDetailsDto>)((OkObjectResult)kdsRes.Result!).Value!;
         if (kdsOrders.Any(o => o.Id == orderDto.Id))
             throw new Exception("Delivered order should not appear in active KDS queue.");
+    }
+
+    // 16. Phase 7: Accounting, Finance & Closing Tests
+    private static void Test_Finance_CreateExpense_RecordsLedgerAndAudit()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new FinanceController(store, NullLogger<FinanceController>.Instance);
+
+        var request = new CreateExpenseRequestDto(
+            Category: "Supplies",
+            Amount: 12500.00m,
+            Description: "شراء منظفات ومعقمات للشاشات",
+            SpentBy: "عمر الورد",
+            PaymentMethod: "Cash"
+        );
+
+        var res = controller.CreateExpense(request);
+        if (res is not OkObjectResult ok || ok.Value is not ExpenseDto expDto)
+            throw new Exception("CreateExpense must return Ok with ExpenseDto.");
+
+        if (expDto.Amount != 12500.00m || !expDto.ExpenseNumber.StartsWith("EXP-"))
+            throw new Exception("ExpenseDto fields mismatch.");
+
+        if (!store.Expenses.ContainsKey(expDto.Id))
+            throw new Exception("Expense was not stored in InMemoryDataStore.");
+
+        if (!store.FinancialTransactions.Values.Any(t => t.TransactionType == "Expense" && t.Amount == 12500.00m))
+            throw new Exception("Financial ledger did not record corresponding Expense transaction.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "CreateExpense" && a.EntityId == expDto.Id.ToString()))
+            throw new Exception("Audit log for CreateExpense was not recorded.");
+    }
+
+    private static void Test_Finance_GetSummary_CalculatesPnlAndNetProfit()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new FinanceController(store, NullLogger<FinanceController>.Instance);
+
+        var summaryRes = controller.GetSummary();
+        if (summaryRes.Result is not OkObjectResult ok || ok.Value is not FinancialSummaryDto summary)
+            throw new Exception("GetSummary must return Ok with FinancialSummaryDto.");
+
+        decimal expectedGross = summary.TotalSessionsRevenue + summary.TotalStoreRevenue + summary.TotalMembershipDeposits;
+        if (summary.TotalGrossRevenue != expectedGross)
+            throw new Exception($"Gross revenue mismatch: expected {expectedGross}, got {summary.TotalGrossRevenue}");
+
+        decimal expectedProfit = summary.TotalGrossRevenue - summary.TotalExpenses;
+        if (summary.NetProfit != expectedProfit)
+            throw new Exception($"Net profit mismatch: expected {expectedProfit}, got {summary.NetProfit}");
+    }
+
+    private static void Test_Finance_LockMonthlyClosing_SecuresMonthAgainstModification()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new FinanceController(store, NullLogger<FinanceController>.Instance);
+
+        var lockReq = new LockMonthlyClosingRequestDto(
+            Year: 2026,
+            Month: 10,
+            Notes: "إقفال واعتماد شهر أكتوبر"
+        );
+
+        var res = controller.LockMonthlyClosing(lockReq);
+        if (res is not OkObjectResult ok || ok.Value is not MonthlyClosingDto closingDto)
+            throw new Exception("LockMonthlyClosing must return Ok with MonthlyClosingDto.");
+
+        if (closingDto.Status != "ApprovedAndLocked" || string.IsNullOrWhiteSpace(closingDto.ApprovedByUserName))
+            throw new Exception("Closing status must be ApprovedAndLocked with approved username.");
+
+        // Duplicate lock must be rejected with BadRequest
+        var duplicateRes = controller.LockMonthlyClosing(lockReq);
+        if (duplicateRes is not BadRequestObjectResult)
+            throw new Exception("Re-locking an already locked month must be rejected with BadRequest.");
     }
 }

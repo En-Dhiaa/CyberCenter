@@ -27,6 +27,34 @@ public class FinancialTransaction : BaseEntity
     public Guid? ReversalRefId { get; set; }
 }
 
+public class Expense : BaseEntity
+{
+    public string ExpenseNumber { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty; // Electricity, Internet, Supplies, Maintenance, Salaries, Rent, Other
+    public decimal Amount { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string SpentBy { get; set; } = string.Empty;
+    public string PaymentMethod { get; set; } = "Cash";
+    public string? ReceiptRef { get; set; }
+}
+
+public class MonthlyClosing : BaseEntity
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public decimal TotalSessionsRevenue { get; set; }
+    public decimal TotalStoreRevenue { get; set; }
+    public decimal TotalMembershipDeposits { get; set; }
+    public decimal TotalGrossRevenue => TotalSessionsRevenue + TotalStoreRevenue + TotalMembershipDeposits;
+    public decimal TotalExpenses { get; set; }
+    public decimal NetProfit => TotalGrossRevenue - TotalExpenses;
+    public string Status { get; set; } = "Draft"; // Draft, ApprovedAndLocked
+    public Guid? ApprovedByUserId { get; set; }
+    public string? ApprovedByUserName { get; set; }
+    public DateTime? ApprovedAtUtc { get; set; }
+    public string? Notes { get; set; }
+}
+
 public class AuditLog
 {
     public Guid Id { get; set; } = Guid.NewGuid();

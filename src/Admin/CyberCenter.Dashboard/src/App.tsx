@@ -12,12 +12,12 @@ import { MembersPage } from '@/pages/MembersPage';
 import { TemporaryCardsPage } from '@/pages/TemporaryCardsPage';
 import { StoreCatalogPage } from '@/pages/StoreCatalogPage';
 import { KitchenKdsPage } from '@/pages/KitchenKdsPage';
+import { PaymentsPage } from '@/pages/PaymentsPage';
+import { ExpensesPage } from '@/pages/ExpensesPage';
+import { FinancialReportsPage } from '@/pages/FinancialReportsPage';
+import { MonthlyClosingPage } from '@/pages/MonthlyClosingPage';
 import { GenericPage } from '@/components/ui/GenericPage';
 import {
-  Wallet,
-  Receipt,
-  BarChart3,
-  CalendarCheck2,
   Activity,
   Zap,
 } from 'lucide-react';
@@ -38,46 +38,10 @@ export const App: React.FC = () => {
           <Route path="cards" element={<TemporaryCardsPage />} />
           <Route path="store" element={<StoreCatalogPage />} />
           <Route path="kitchen" element={<KitchenKdsPage />} />
-          <Route
-            path="payments"
-            element={
-              <GenericPage
-                title="المدفوعات والمحافظ (Payments)"
-                subtitle="إدارة عمليات الدفع النقدية والمحافظ الإلكترونية والتحويلات المحلية"
-                icon={Wallet}
-              />
-            }
-          />
-          <Route
-            path="expenses"
-            element={
-              <GenericPage
-                title="المصروفات اليومية (Expenses)"
-                subtitle="تسجيل وتوثيق مصروفات المركز التشغيلية من قبل المشرفين"
-                icon={Receipt}
-              />
-            }
-          />
-          <Route
-            path="reports"
-            element={
-              <GenericPage
-                title="التقارير المالية (Financial Reports)"
-                subtitle="تحليلات تفصيلية للإيرادات، مبيعات المتجر، وصافي الأرباح التراكمية"
-                icon={BarChart3}
-              />
-            }
-          />
-          <Route
-            path="closing"
-            element={
-              <GenericPage
-                title="الإقفال الشهري (Monthly Closing)"
-                subtitle="اعتماد وتثبيت النتائج المالية الشهرية من قبل المدير العام"
-                icon={CalendarCheck2}
-              />
-            }
-          />
+          <Route path="payments" element={<PaymentsPage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="reports" element={<FinancialReportsPage />} />
+          <Route path="closing" element={<MonthlyClosingPage />} />
           <Route
             path="network"
             element={
