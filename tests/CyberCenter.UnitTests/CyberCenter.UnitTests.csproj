@@ -9,10 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Shared\CyberCenter.Contracts\CyberCenter.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Server\CyberCenter.Domain\CyberCenter.Domain.csproj" />
     <ProjectReference Include="..\..\src\Server\CyberCenter.Application\CyberCenter.Application.csproj" />
     <ProjectReference Include="..\..\src\Server\CyberCenter.Infrastructure\CyberCenter.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Server\CyberCenter.API\CyberCenter.API.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,8 +1,13 @@
 using System.Diagnostics;
+using CyberCenter.API.Controllers;
 using CyberCenter.Application.Services;
+using CyberCenter.Contracts.DTOs;
 using CyberCenter.Contracts.Enums;
 using CyberCenter.Domain.Entities;
+using CyberCenter.Infrastructure.Persistence;
 using CyberCenter.Infrastructure.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CyberCenter.UnitTests;
 
@@ -15,7 +20,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 1 VERIFICATION) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 2 AUTH & ADMIN) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -40,6 +45,20 @@ public class Program
         RunTest("PasswordHasher: PBKDF2 hash verifies against correct password", Test_PasswordHasher_Verify);
         RunTest("PasswordHasher: PBKDF2 rejects invalid password", Test_PasswordHasher_RejectWrongPassword);
         RunTest("TokenGenerator: Generates signed compact token", Test_TokenGenerator_GeneratesSignedToken);
+
+        // 5. Phase 2: AuthController Tests
+        RunTest("Auth: Valid SuperAdmin credentials successfully log in", Test_Auth_Login_Success);
+        RunTest("Auth: Invalid password returns Unauthorized and logs audit", Test_Auth_Login_WrongPassword);
+        RunTest("Auth: Inactive user account is blocked from logging in", Test_Auth_Login_InactiveUser);
+
+        // 6. Phase 2: EmployeesController & RBAC Tests
+        RunTest("Employees: Create new staff member succeeds", Test_Employees_Create_Success);
+        RunTest("Employees: Duplicate username is rejected with Conflict", Test_Employees_Create_DuplicateUsername);
+        RunTest("Employees: Deleting the sole SuperAdmin is prohibited", Test_Employees_Prevent_SoleAdmin_Delete);
+
+        // 7. Phase 2: Audit Logs & System Settings Tests
+        RunTest("AuditLogs: Immutable audit trail records actions and supports search", Test_AuditLogs_SearchAndFilter);
+        RunTest("Settings: Updating system settings succeeds and logs audit entry", Test_Settings_UpdateAndAudit);
 
         stopwatch.Stop();
 
@@ -212,5 +231,166 @@ public class Program
         var token = generator.GenerateToken(user, new[] { "SuperAdmin" });
         if (string.IsNullOrWhiteSpace(token) || token.Split('.').Length != 3)
             throw new Exception("Token must be a valid 3-part compact JWT format.");
+    }
+
+    private static void Test_Auth_Login_Success()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var tokenGen = new NativeTokenGenerator("MySuperSecretKey_2026_EnterpriseSecureToken!");
+        var logger = NullLogger<AuthController>.Instance;
+
+        var controller = new AuthController(store, hasher, tokenGen, logger);
+        var result = controller.Login(new LoginRequestDto("superadmin", "Admin@Cyber2026!"));
+
+        var okResult = result.Result as OkObjectResult;
+        if (okResult == null || okResult.Value is not LoginResponseDto response)
+            throw new Exception("Expected OkObjectResult with LoginResponseDto.");
+
+        if (response.Username != "superadmin" || response.UserType != "SuperAdmin")
+            throw new Exception("User details in login response mismatch.");
+
+        if (string.IsNullOrWhiteSpace(response.Token))
+            throw new Exception("Token cannot be empty.");
+    }
+
+    private static void Test_Auth_Login_WrongPassword()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var tokenGen = new NativeTokenGenerator("MySuperSecretKey_2026_EnterpriseSecureToken!");
+        var logger = NullLogger<AuthController>.Instance;
+
+        var controller = new AuthController(store, hasher, tokenGen, logger);
+        var result = controller.Login(new LoginRequestDto("superadmin", "WrongPassword!@#"));
+
+        if (result.Result is not UnauthorizedObjectResult)
+            throw new Exception("Wrong password must result in Unauthorized (401).");
+
+        // Verify audit log recorded
+        if (!store.AuditLogs.Any(a => a.Action == "FailedLoginAttempt"))
+            throw new Exception("Failed login must be recorded in AuditLogs.");
+    }
+
+    private static void Test_Auth_Login_InactiveUser()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var tokenGen = new NativeTokenGenerator("MySuperSecretKey_2026_EnterpriseSecureToken!");
+        var logger = NullLogger<AuthController>.Instance;
+
+        // Create inactive user
+        var inactive = new User
+        {
+            Username = "disabled_staff",
+            PasswordHash = hasher.HashPassword("Pass123!"),
+            FullName = "Disabled Person",
+            IsActive = false
+        };
+        store.Users.TryAdd(inactive.Id, inactive);
+
+        var controller = new AuthController(store, hasher, tokenGen, logger);
+        var result = controller.Login(new LoginRequestDto("disabled_staff", "Pass123!"));
+
+        if (result.Result is not UnauthorizedObjectResult)
+            throw new Exception("Inactive user must be blocked with Unauthorized.");
+    }
+
+    private static void Test_Employees_Create_Success()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var logger = NullLogger<EmployeesController>.Instance;
+
+        var controller = new EmployeesController(store, hasher, logger);
+        var req = new CreateEmployeeRequestDto("ahmed_cashier", "Cashier2026!", "أحمد السامعي", "ahmed@cyber.local", "+967771234567", "Cashier");
+        var result = controller.CreateEmployee(req);
+
+        if (result is not CreatedAtActionResult created)
+            throw new Exception("Creating employee must return CreatedAtActionResult.");
+
+        var createdEmp = created.Value as User;
+        if (createdEmp == null || createdEmp.Username != "ahmed_cashier" || createdEmp.UserType != "Cashier")
+            throw new Exception("Created employee properties do not match request.");
+    }
+
+    private static void Test_Employees_Create_DuplicateUsername()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var logger = NullLogger<EmployeesController>.Instance;
+
+        var controller = new EmployeesController(store, hasher, logger);
+        var req = new CreateEmployeeRequestDto("superadmin", "DuplicatePass!", "Fake Admin", null, null, "Admin");
+        var result = controller.CreateEmployee(req);
+
+        if (result is not ConflictObjectResult)
+            throw new Exception("Duplicate username must return Conflict (409).");
+    }
+
+    private static void Test_Employees_Prevent_SoleAdmin_Delete()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var logger = NullLogger<EmployeesController>.Instance;
+
+        var controller = new EmployeesController(store, hasher, logger);
+        var admin = store.Users.Values.First(u => u.UserType == "SuperAdmin");
+
+        var result = controller.DeleteEmployee(admin.Id);
+        if (result is not BadRequestObjectResult)
+            throw new Exception("Deleting sole SuperAdmin must be blocked with BadRequest (400).");
+    }
+
+    private static void Test_AuditLogs_SearchAndFilter()
+    {
+        var store = new InMemoryDataStore();
+        store.AuditLogs.Add(new AuditLog
+        {
+            Action = "LockStation",
+            Username = "superadmin",
+            EntityName = "Device",
+            CreatedAtUtc = DateTime.UtcNow
+        });
+        store.AuditLogs.Add(new AuditLog
+        {
+            Action = "CreateTemporaryCardBatch",
+            Username = "superadmin",
+            EntityName = "CardBatch",
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        var controller = new AuditLogsController(store);
+        var res = controller.GetAuditLogs(search: "LockStation", action: null, page: 1, pageSize: 10);
+
+        if (res.Result is not OkObjectResult ok || ok.Value == null)
+            throw new Exception("Audit logs query must return OkObjectResult.");
+    }
+
+    private static void Test_Settings_UpdateAndAudit()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new SettingsController(store);
+
+        var newSettings = new SystemSettingsDto(
+            CenterName: "Arena eSports Center",
+            CenterPhone: "+967 777 999 888",
+            Currency: "YER",
+            DefaultHourlyRate: 600.00m,
+            VipHourlyRate: 1000.00m,
+            OfflineGracePeriodMinutes: 7,
+            WarningBeforeExpiryMinutes: 5,
+            AllowGuestBrowsing: true
+        );
+
+        var res = controller.UpdateSettings(newSettings);
+        if (res.Result is not OkObjectResult ok || ok.Value is not SystemSettingsDto returned)
+            throw new Exception("Updating settings must return updated object.");
+
+        if (returned.DefaultHourlyRate != 600.00m || returned.OfflineGracePeriodMinutes != 7)
+            throw new Exception("Settings values were not updated correctly.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "UpdateSystemSettings"))
+            throw new Exception("Updating settings must generate an AuditLog entry.");
     }
 }

@@ -1,8 +1,12 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { LoginPage } from '@/pages/LoginPage';
 import { OverviewPage } from '@/pages/OverviewPage';
 import { LiveDevicesPage } from '@/pages/LiveDevicesPage';
+import { EmployeesPage } from '@/pages/EmployeesPage';
+import { AuditLogsPage } from '@/pages/AuditLogsPage';
+import { SystemSettingsPage } from '@/pages/SystemSettingsPage';
 import { GenericPage } from '@/components/ui/GenericPage';
 import {
   History,
@@ -16,15 +20,16 @@ import {
   CalendarCheck2,
   Activity,
   Zap,
-  UserCog,
-  FileSpreadsheet,
-  Settings,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Authentication Route */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Protected Dashboard Routes */}
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="devices" element={<LiveDevicesPage />} />
@@ -138,39 +143,14 @@ export const App: React.FC = () => {
               />
             }
           />
-          <Route
-            path="employees"
-            element={
-              <GenericPage
-                title="الموظفون والصلاحيات (Staff & Roles)"
-                subtitle="إدارة حسابات المشرفين والكاشير وتعيين أدوار الـ RBAC الصارمة"
-                icon={UserCog}
-              />
-            }
-          />
-          <Route
-            path="audit"
-            element={
-              <GenericPage
-                title="سجل العمليات والتدقيق (Audit Logs)"
-                subtitle="سجل تدقيق أمني غير قابل للتعديل يوثق كافة العمليات الإدارية الحساسة"
-                icon={FileSpreadsheet}
-              />
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <GenericPage
-                title="إعدادات النظام (System Settings)"
-                subtitle="إعدادات المركز، تسعيرة الساعات، مهلة عدم الاتصال، وسياسات الأمان"
-                icon={Settings}
-              />
-            }
-          />
+          {/* Phase 2 Pages */}
+          <Route path="employees" element={<EmployeesPage />} />
+          <Route path="audit" element={<AuditLogsPage />} />
+          <Route path="settings" element={<SystemSettingsPage />} />
         </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 };
-

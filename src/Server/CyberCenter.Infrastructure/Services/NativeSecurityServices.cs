@@ -74,3 +74,4 @@ public class NativeTokenGenerator : IJwtTokenGenerator
         return $"{header}.{payload}.{signature}";
     }
 }
+
