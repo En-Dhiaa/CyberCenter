@@ -7,11 +7,11 @@ import { LiveDevicesPage } from '@/pages/LiveDevicesPage';
 import { EmployeesPage } from '@/pages/EmployeesPage';
 import { AuditLogsPage } from '@/pages/AuditLogsPage';
 import { SystemSettingsPage } from '@/pages/SystemSettingsPage';
+import { SessionsPage } from '@/pages/SessionsPage';
+import { MembersPage } from '@/pages/MembersPage';
+import { TemporaryCardsPage } from '@/pages/TemporaryCardsPage';
 import { GenericPage } from '@/components/ui/GenericPage';
 import {
-  History,
-  Users,
-  CreditCard,
   ShoppingBag,
   ChefHat,
   Wallet,
@@ -33,36 +33,9 @@ export const App: React.FC = () => {
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="devices" element={<LiveDevicesPage />} />
-          <Route
-            path="sessions"
-            element={
-              <GenericPage
-                title="سجل الجلسات (Sessions)"
-                subtitle="متابعة الجلسات المفتوحة، كروت الدقائق، وجلسات الأعضاء المشتركين"
-                icon={History}
-              />
-            }
-          />
-          <Route
-            path="members"
-            element={
-              <GenericPage
-                title="الأعضاء والاشتراكات (Members & Plans)"
-                subtitle="إدارة حسابات الأعضاء الدائمين، الخطط الشهرية، وأرصدة المحافظ"
-                icon={Users}
-              />
-            }
-          />
-          <Route
-            path="cards"
-            element={
-              <GenericPage
-                title="الكروت المؤقتة (Temporary Cards)"
-                subtitle="توليد وطباعة دفعات الكروت المؤقتة بالـ PIN المشفر المكون من 16 رقماً"
-                icon={CreditCard}
-              />
-            }
-          />
+          <Route path="sessions" element={<SessionsPage />} />
+          <Route path="members" element={<MembersPage />} />
+          <Route path="cards" element={<TemporaryCardsPage />} />
           <Route
             path="store"
             element={

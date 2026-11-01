@@ -29,3 +29,4 @@ public record DeviceMetricsDto(
     long SessionConsumedBytes,
     DateTime SampledAtUtc
 );
+

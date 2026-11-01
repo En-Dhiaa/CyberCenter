@@ -23,7 +23,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 3 DEVICES & AGENT) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 4 SESSIONS & CARDS ENGINE) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -75,6 +75,20 @@ public class Program
 
         // 10. Phase 3: Device Groups & Fleet Management Tests
         RunTest("DeviceGroups: Create and query device groups with correct pricing", Test_DeviceGroups_CreationAndListing);
+
+        // 11. Phase 4: Sessions Engine Tests
+        RunTest("Sessions: Start open session locks station and accrues cost", Test_Sessions_StartOpenSession_AccruesCostAndLocksStation);
+        RunTest("Sessions: Start temporary card session validates 16-digit PIN and deducts time", Test_Sessions_StartCardSession_ValidatesPinAndDeductsTime);
+        RunTest("Sessions: Extend active session adds remaining time", Test_Sessions_Extend_AddsRemainingTime);
+        RunTest("Sessions: Terminate session marks station available and records audit", Test_Sessions_Terminate_FreesStationAndSavesAudit);
+
+        // 12. Phase 4: Temporary Cards & CSV Export Tests
+        RunTest("TemporaryCards: Create card batch generates unique 16-digit verifiable PINs", Test_TemporaryCards_CreateBatch_Generates16DigitPins);
+        RunTest("TemporaryCards: Export batch CSV produces downloadable formatted file", Test_TemporaryCards_ExportCsv_ContainsHeadersAndPins);
+
+        // 13. Phase 4: Members & Subscriptions Tests
+        RunTest("Members: Create member and recharge wallet balance and minutes", Test_Members_CreateAndRechargeWallet);
+        RunTest("Members: Toggle status successfully suspends and reactivates member account", Test_Members_ToggleStatus_ActivatesAndSuspends);
 
         stopwatch.Stop();
 
@@ -548,5 +562,265 @@ public class Program
 
         if (!list.Any(g => g.Name == "Racing Simulators"))
             throw new Exception("Newly created group not found in list.");
+    }
+
+    // 11. Phase 4: Sessions Engine Tests
+    private static void Test_Sessions_StartOpenSession_AccruesCostAndLocksStation()
+    {
+        var store = new InMemoryDataStore();
+        var leaseManager = new SessionLeaseManager("TestSuperSecretKeyForSigningLease1234567890!");
+        var controller = new SessionsController(store, leaseManager, null!, NullLogger<SessionsController>.Instance);
+
+        var device = store.Devices.Values.First();
+        device.Status = DeviceStatus.Available;
+
+        var request = new StartOpenSessionRequestDto(device.Id, "VIP Guest Open Session");
+        var res = controller.StartOpenSession(request).GetAwaiter().GetResult();
+
+        if (res.Result is not OkObjectResult ok || ok.Value is not SessionDetailsDto sessionDto)
+            throw new Exception("StartOpenSession must return OkObjectResult with SessionDetailsDto.");
+
+        if (sessionDto.SessionType != "Open")
+            throw new Exception("SessionType must be Open.");
+
+        if (device.Status != DeviceStatus.Occupied)
+            throw new Exception("Device status must be updated to Occupied.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "StartOpenSession" && a.EntityId == sessionDto.Id.ToString()))
+            throw new Exception("Audit log for StartOpenSession was not created.");
+    }
+
+    private static void Test_Sessions_StartCardSession_ValidatesPinAndDeductsTime()
+    {
+        var store = new InMemoryDataStore();
+        var leaseManager = new SessionLeaseManager("TestSuperSecretKeyForSigningLease1234567890!");
+        var cardController = new TemporaryCardsController(store, NullLogger<TemporaryCardsController>.Instance);
+        var sessionController = new SessionsController(store, leaseManager, null!, NullLogger<SessionsController>.Instance);
+
+        // 1. Generate batch with 1 card of 60 mins
+        var batchRes = cardController.GenerateCardBatch(new GenerateCardBatchRequestDto(
+            BatchName: "Test 1-Hour Batch",
+            CardCount: 1,
+            DurationMinutes: 60,
+            PricePerCard: 500.00m,
+            ValidDays: 30
+        ));
+
+        if (batchRes.Result is not OkObjectResult okBatch || okBatch.Value is not GenerateCardBatchResponseDto batchDto)
+            throw new Exception("Failed to create temporary card batch.");
+
+        var cards = store.TemporaryCards.Values.ToList();
+        if (cards.Count == 0)
+            throw new Exception("No temporary cards stored.");
+
+        // Extract cleartext PIN from batch generation response
+        string cleanPin = batchDto.PrintableCards.First().CleartextPin;
+
+        var device = store.Devices.Values.First();
+        device.Status = DeviceStatus.Available;
+
+        // 2. Start session with the PIN
+        var startRes = sessionController.StartCardSession(new StartCardSessionRequestDto(device.Id, cleanPin)).GetAwaiter().GetResult();
+        if (startRes.Result is not OkObjectResult okSession || okSession.Value is not SessionDetailsDto sessionDto)
+            throw new Exception("StartCardSession failed with valid PIN.");
+
+        if (sessionDto.SessionType != "TemporaryCard")
+            throw new Exception("SessionType must be TemporaryCard.");
+
+        if (device.Status != DeviceStatus.Occupied)
+            throw new Exception("Station status must become Occupied.");
+    }
+
+    private static void Test_Sessions_Extend_AddsRemainingTime()
+    {
+        var store = new InMemoryDataStore();
+        var leaseManager = new SessionLeaseManager("TestSuperSecretKeyForSigningLease1234567890!");
+        var controller = new SessionsController(store, leaseManager, null!, NullLogger<SessionsController>.Instance);
+
+        var device = store.Devices.Values.First();
+        device.Status = DeviceStatus.Available;
+
+        var startRes = controller.StartOpenSession(new StartOpenSessionRequestDto(device.Id, "Extend Test")).GetAwaiter().GetResult();
+        var sessionDto = (SessionDetailsDto)((OkObjectResult)startRes.Result!).Value!;
+
+        var extendRes = controller.ExtendSession(sessionDto.Id, new ExtendSessionRequestDto(30)).GetAwaiter().GetResult();
+        if (extendRes is not OkObjectResult)
+            throw new Exception("ExtendSession must return OkObjectResult.");
+
+        var session = store.Sessions[sessionDto.Id];
+        if (session.AllocatedSeconds != 30 * 60)
+            throw new Exception("Session allocated seconds was not extended by 30 minutes.");
+    }
+
+    private static void Test_Sessions_Terminate_FreesStationAndSavesAudit()
+    {
+        var store = new InMemoryDataStore();
+        var leaseManager = new SessionLeaseManager("TestSuperSecretKeyForSigningLease1234567890!");
+        var controller = new SessionsController(store, leaseManager, null!, NullLogger<SessionsController>.Instance);
+
+        var device = store.Devices.Values.First();
+        device.Status = DeviceStatus.Available;
+
+        var startRes = controller.StartOpenSession(new StartOpenSessionRequestDto(device.Id, "Terminate Test")).GetAwaiter().GetResult();
+        var sessionDto = (SessionDetailsDto)((OkObjectResult)startRes.Result!).Value!;
+
+        var termRes = controller.TerminateSession(sessionDto.Id, new TerminateSessionRequestDto("Client Paid and Left")).GetAwaiter().GetResult();
+        if (termRes is not OkObjectResult)
+            throw new Exception("TerminateSession must return OkObjectResult.");
+
+        var session = store.Sessions[sessionDto.Id];
+        if (session.Status != SessionStatus.Completed)
+            throw new Exception("Session status must be Completed.");
+
+        if (device.Status != DeviceStatus.Available)
+            throw new Exception("Device must be released back to Available.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "TerminateSession" && a.EntityId == sessionDto.Id.ToString()))
+            throw new Exception("Audit log for TerminateSession was not recorded.");
+    }
+
+    // 12. Phase 4: Temporary Cards Batch & Export Tests
+    private static void Test_TemporaryCards_CreateBatch_Generates16DigitPins()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new TemporaryCardsController(store, NullLogger<TemporaryCardsController>.Instance);
+
+        var req = new GenerateCardBatchRequestDto(
+            BatchName: "Weekend Promo 50 Cards",
+            CardCount: 10,
+            DurationMinutes: 120,
+            PricePerCard: 1000.00m,
+            ValidDays: 7
+        );
+
+        var res = controller.GenerateCardBatch(req);
+        if (res.Result is not OkObjectResult ok || ok.Value is not GenerateCardBatchResponseDto batchDto)
+            throw new Exception("GenerateCardBatch must return Ok with GenerateCardBatchResponseDto.");
+
+        var cards = store.TemporaryCards.Values.ToList();
+        if (cards.Count != 10)
+            throw new Exception($"Expected 10 cards, got {cards.Count}");
+
+        foreach (var cardSummary in batchDto.PrintableCards)
+        {
+            string rawPin = cardSummary.CleartextPin;
+            string masked = cardSummary.MaskedCode;
+            Guid cardId = cardSummary.CardId;
+            var cardEntity = store.TemporaryCards[cardId];
+
+            if (string.IsNullOrWhiteSpace(rawPin) || rawPin.Length != 16)
+                throw new Exception("Each card must have a raw 16-digit PIN on batch generation.");
+
+            if (!masked.StartsWith("CC-****-****-"))
+                throw new Exception("Card masked code must follow CC-****-****-XXXX pattern.");
+
+            if (!TemporaryCardSecurity.VerifyPin(rawPin, cardEntity.BatchId.ToString("N"), cardEntity.PinHash))
+                throw new Exception("Card PIN must verify against its stored PBKDF2 hash.");
+        }
+    }
+
+    private static void Test_TemporaryCards_ExportCsv_ContainsHeadersAndPins()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new TemporaryCardsController(store, NullLogger<TemporaryCardsController>.Instance);
+
+        var batchRes = controller.GenerateCardBatch(new GenerateCardBatchRequestDto(
+            BatchName: "CSV Export Batch",
+            CardCount: 3,
+            DurationMinutes: 90,
+            PricePerCard: 750.00m,
+            ValidDays: 14
+        ));
+
+        var batchDto = (GenerateCardBatchResponseDto)((OkObjectResult)batchRes.Result!).Value!;
+
+        var csvRes = controller.ExportBatchCsv(batchDto.BatchId);
+
+        if (csvRes is not FileContentResult fileResult)
+            throw new Exception("ExportBatchCsv must return FileContentResult.");
+
+        var csvString = System.Text.Encoding.UTF8.GetString(fileResult.FileContents);
+        if (!csvString.Contains("CardId,CardCode,DurationMinutes,RemainingMinutes,Status,ExpiresAtUtc"))
+            throw new Exception("CSV missing standard export headers.");
+
+        if (fileResult.ContentType != "text/csv")
+            throw new Exception("Content type must be text/csv.");
+    }
+
+    // 13. Phase 4: Members & Subscriptions Tests
+    private static void Test_Members_CreateAndRechargeWallet()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var controller = new MembersController(store, hasher, NullLogger<MembersController>.Instance);
+
+        var createReq = new CreateMemberRequestDto(
+            Username: "gamer_pro_77",
+            Password: "SecurePassword123!",
+            FullName: "محمد عبدالملك",
+            PhoneNumber: "+967 777 888 999",
+            Email: "gamer@cybercenter.local",
+            InitialDeposit: 3000.00m,
+            InitialMinutes: 180
+        );
+
+        var res = controller.CreateMember(createReq);
+        if (res is not CreatedAtActionResult created || created.Value is not User member)
+            throw new Exception("CreateMember must return CreatedAtActionResult with User entity.");
+
+        if (member.WalletBalance != 3000.00m || member.RemainingSeconds != 180 * 60)
+            throw new Exception("Initial deposit and minutes do not match request.");
+
+        // Recharge wallet
+        var rechargeRes = controller.RechargeMember(member.Id, new RechargeMemberRequestDto(
+            Amount: 5000.00m,
+            AdditionalMinutes: 60,
+            PaymentMethod: "Cash"
+        ));
+
+        if (rechargeRes is not OkObjectResult)
+            throw new Exception("RechargeMember must return OkObjectResult.");
+
+        if (member.WalletBalance != 8000.00m)
+            throw new Exception($"Wallet balance mismatch: expected 8000, got {member.WalletBalance}");
+
+        if (member.RemainingSeconds != 240 * 60)
+            throw new Exception($"Remaining seconds mismatch: expected 14400, got {member.RemainingSeconds}");
+    }
+
+    private static void Test_Members_ToggleStatus_ActivatesAndSuspends()
+    {
+        var store = new InMemoryDataStore();
+        var hasher = new NativePasswordHasher();
+        var controller = new MembersController(store, hasher, NullLogger<MembersController>.Instance);
+
+        var createReq = new CreateMemberRequestDto(
+            Username: "gamer_to_suspend",
+            Password: "Pass!",
+            FullName: "عضو للتجربة",
+            PhoneNumber: null,
+            Email: null,
+            InitialDeposit: 0,
+            InitialMinutes: 0
+        );
+
+        var res = controller.CreateMember(createReq);
+        var member = (User)((CreatedAtActionResult)res).Value!;
+
+        // Suspend member
+        var suspendRes = controller.ToggleMemberStatus(member.Id, false);
+        if (suspendRes is not OkObjectResult)
+            throw new Exception("ToggleMemberStatus(false) failed.");
+
+        if (member.IsActive)
+            throw new Exception("Member must be inactive after suspension.");
+
+        // Reactivate member
+        var reactivateRes = controller.ToggleMemberStatus(member.Id, true);
+        if (reactivateRes is not OkObjectResult)
+            throw new Exception("ToggleMemberStatus(true) failed.");
+
+        if (!member.IsActive)
+            throw new Exception("Member must be active after reactivation.");
     }
 }

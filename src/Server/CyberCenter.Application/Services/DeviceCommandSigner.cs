@@ -68,3 +68,4 @@ public class DeviceCommandSigner
         return Convert.ToBase64String(hash);
     }
 }
+
