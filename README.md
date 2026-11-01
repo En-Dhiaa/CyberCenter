@@ -3,8 +3,8 @@
 > **نظام مركزي متكامل لإدارة مراكز الإنترنت وصالات الألعاب الاحترافية**  
 > *Production-Ready, Centralized Internet Café & Gaming Center Management Platform*
 
-[![Status](https://img.shields.io/badge/Status-Phase%200%20Architecture-blue.svg)](#)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](#)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready%20(v2.4.0)-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/Tests-56%2F56%20Passing%20(100%25)-success.svg)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11%20%7C%20Linux%20Server-brightgreen.svg)](#)
 [![Stack](https://img.shields.io/badge/Stack-.NET%208%20LTS%20%7C%20React%2018%20%7C%20PostgreSQL-indigo.svg)](#)
 
@@ -116,9 +116,11 @@ CyberCenter/
 
 ---
 
-## 📚 التوثيق الهندسي (Project Documentation)
+## 📚 التوثيق الهندسي وتشغيل النظام (Project Documentation)
 
 تم توثيق النظام بمعايير Enterprise متقدمة في مجلد `docs/`:
+- [دليل تشغيل النظام الشامل للمشغلين والمدراء (Operator & User Manual)](file:///docs/OPERATOR_MANUAL.md)
+- [تقرير نتائج الجودة والاختبارات الشاملة (QA Test Run Report)](file:///docs/QA_TEST_RUN_REPORT.md)
 - [نظرة عامة على المشروع (Project Overview)](file:///docs/PROJECT_OVERVIEW.md)
 - [المتطلبات الوظيفية والتقنية (Requirements)](file:///docs/REQUIREMENTS.md)
 - [معمارية النظام والاتصالات (System Architecture)](file:///docs/SYSTEM_ARCHITECTURE.md)
@@ -131,12 +133,44 @@ CyberCenter/
 
 ---
 
-## 🚀 البدء السريع (Getting Started)
+## 🚀 البدء السريع وتشغيل النظام (Quick Start & Running)
 
-سيتم توفير تفاصيل التشغيل خطوة بخطوة عند اكتمال المرحلة التأسيسية (Phase 1).  
-متطلبات البيئة الأساسية:
-- **.NET 8 SDK (LTS)** أو أحدث
-- **Node.js (v18+)** و **npm**
-- **PostgreSQL 15+**
-- نظام تشغيل **Windows 10 / 11** لمحطات العملاء.
+### 1. تشغيل جناح الاختبارات الآلية الشامل (Automated Tests):
+```bash
+# تشغيل حزمة اختبارات .NET الشاملة (52 اختباراً):
+dotnet run --project tests/CyberCenter.UnitTests/CyberCenter.UnitTests.csproj
+
+# تشغيل اختبارات تكامل النسخ الاحتياطي واكتشاف التلاعب (Tamper Detection):
+powershell -ExecutionPolicy Bypass -File deployment/scripts/Test-BackupRestoreIntegrity.ps1
+```
+
+### 2. تشغيل الخادم المركزي (Central Backend Server):
+```bash
+dotnet run --project src/Server/CyberCenter.API/CyberCenter.API.csproj
+# يستمع الخادم على: http://localhost:5000 (Swagger: http://localhost:5000/swagger)
+```
+
+### 3. تشغيل لوحة الإدارة (Web Admin Dashboard):
+```bash
+cd src/Admin/CyberCenter.Dashboard
+npm install
+npm run dev
+# تعمل اللوحة على: http://localhost:5173
+```
+
+### 4. تثبيت محطة العميل وتطبيق سياسات الأمان (Client Station Installation):
+```powershell
+# تشغيل موجه أوامر PowerShell كمسؤول (Run as Administrator):
+cd deployment\client
+.\Install-CyberCenterStation.ps1 -ServerUrl "http://192.168.1.100:5000" -StationNumber 1 -AutoLogon $true
+```
+
+### 5. النسخ الاحتياطي والاستعادة الآمنة المشفرة (Backup & Disaster Recovery):
+```powershell
+# أخذ نسخة احتياطية فورية مع توثيق بصمة SHA-256:
+.\deployment\scripts\Backup-CyberCenterDatabase.ps1 -BackupDir "C:\CyberCenter\Backups"
+
+# استعادة وفحص السلامة الرقمية قبل التطبيق:
+.\deployment\scripts\Restore-CyberCenterDatabase.ps1 -BackupFilePath "C:\CyberCenter\Backups\cybercenter_backup_YYYYMMDD_HHMMSS.sql"
+```
 

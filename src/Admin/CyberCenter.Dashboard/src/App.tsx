@@ -18,6 +18,7 @@ import { FinancialReportsPage } from '@/pages/FinancialReportsPage';
 import { MonthlyClosingPage } from '@/pages/MonthlyClosingPage';
 import { NetworkMonitorPage } from '@/pages/NetworkMonitorPage';
 import { EnergyMonitorPage } from '@/pages/EnergyMonitorPage';
+import { BackupRestorePage } from '@/pages/BackupRestorePage';
 
 export const App: React.FC = () => {
   return (
@@ -41,6 +42,7 @@ export const App: React.FC = () => {
           <Route path="closing" element={<MonthlyClosingPage />} />
           <Route path="network" element={<NetworkMonitorPage />} />
           <Route path="energy" element={<EnergyMonitorPage />} />
+          <Route path="backup" element={<BackupRestorePage />} />
           {/* Phase 2 Pages */}
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="audit" element={<AuditLogsPage />} />

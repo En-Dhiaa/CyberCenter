@@ -19,6 +19,7 @@ import {
   FileSpreadsheet,
   Settings,
   ShieldCheck,
+  Database,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -69,6 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
         { to: '/employees', icon: UserCog, label: t('nav.employees') },
         { to: '/audit', icon: FileSpreadsheet, label: t('nav.auditLogs') },
         { to: '/settings', icon: Settings, label: t('nav.systemSettings') },
+        { to: '/backup', icon: Database, label: t('nav.backupRestore') },
       ],
     },
   ];
