@@ -107,6 +107,9 @@ public class DevicesController : ControllerBase
                 IpAddress = heartbeat.IpAddress,
                 Status = heartbeat.ReportedStatus,
                 AgentVersion = heartbeat.AgentVersion,
+                GpuTemperatureCelsius = heartbeat.GpuTemperatureCelsius,
+                CpuTemperatureCelsius = heartbeat.CpuTemperatureCelsius,
+                DiskFreeSpaceGb = heartbeat.DiskFreeSpaceGb,
                 LastHeartbeatUtc = DateTime.UtcNow
             };
             _dataStore.Devices.TryAdd(device.Id, device);
@@ -117,6 +120,9 @@ public class DevicesController : ControllerBase
             device.IpAddress = heartbeat.IpAddress;
             device.Status = heartbeat.ReportedStatus;
             device.AgentVersion = heartbeat.AgentVersion;
+            device.GpuTemperatureCelsius = heartbeat.GpuTemperatureCelsius;
+            device.CpuTemperatureCelsius = heartbeat.CpuTemperatureCelsius;
+            device.DiskFreeSpaceGb = heartbeat.DiskFreeSpaceGb;
             device.LastHeartbeatUtc = DateTime.UtcNow;
 
             if (oldStatus != device.Status)

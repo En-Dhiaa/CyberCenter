@@ -23,6 +23,9 @@ public class Device : BaseEntity
 
     public decimal? CustomHourlyRate { get; set; }
     public string? HardwareSpecsJson { get; set; }
+    public double GpuTemperatureCelsius { get; set; } = 54.0;
+    public double CpuTemperatureCelsius { get; set; } = 48.0;
+    public double DiskFreeSpaceGb { get; set; } = 420.0;
     public string? AgentVersion { get; set; }
     public DateTime? LastHeartbeatUtc { get; set; }
     public string SecretKey { get; set; } = Guid.NewGuid().ToString("N");

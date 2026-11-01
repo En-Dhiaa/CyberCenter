@@ -20,6 +20,7 @@ import {
   Send,
   CheckCircle2,
 } from 'lucide-react';
+import clsx from 'clsx';
 import { StatusBadge, DeviceStatus } from '@/components/ui/StatusBadge';
 
 interface StationDetails {
@@ -35,20 +36,23 @@ interface StationDetails {
   cpu: string;
   ram: string;
   gpu: string;
+  gpuTemp?: number;
+  cpuTemp?: number;
+  diskFreeGb?: number;
   downMbps: number;
   upMbps: number;
   totalDataGb: number;
 }
 
 const initialFleet: StationDetails[] = [
-  { id: '1', number: 1, name: 'VIP-Station-01', group: 'VIP Lounge', status: 'Occupied', user: 'عمر القحطاني', remainingMinutes: 84, ip: '192.168.1.101', mac: '00:1A:2B:3C:4D:5E', cpu: 'i9-14900K', ram: '32GB DDR5', gpu: 'RTX 4080', downMbps: 12.4, upMbps: 2.1, totalDataGb: 3.4 },
-  { id: '2', number: 2, name: 'VIP-Station-02', group: 'VIP Lounge', status: 'Occupied', user: 'أحمد السامعي', remainingMinutes: 35, ip: '192.168.1.102', mac: '00:1A:2B:3C:4D:5F', cpu: 'i9-14900K', ram: '32GB DDR5', gpu: 'RTX 4080', downMbps: 24.8, upMbps: 4.5, totalDataGb: 5.1 },
-  { id: '3', number: 3, name: 'Pro-Station-03', group: 'Pro Arena', status: 'Available', ip: '192.168.1.103', mac: '00:1A:2B:3C:4D:60', cpu: 'i7-14700K', ram: '32GB DDR5', gpu: 'RTX 4070 Ti', downMbps: 0.1, upMbps: 0.0, totalDataGb: 0.2 },
-  { id: '4', number: 4, name: 'Pro-Station-04', group: 'Pro Arena', status: 'Occupied', user: 'كرت مؤقت #8921', remainingMinutes: 12, ip: '192.168.1.104', mac: '00:1A:2B:3C:4D:61', cpu: 'i7-14700K', ram: '32GB DDR5', gpu: 'RTX 4070 Ti', downMbps: 45.2, upMbps: 8.7, totalDataGb: 12.8 },
-  { id: '5', number: 5, name: 'Pro-Station-05', group: 'Pro Arena', status: 'Reserved', ip: '192.168.1.105', mac: '00:1A:2B:3C:4D:62', cpu: 'i7-14700K', ram: '32GB DDR5', gpu: 'RTX 4070 Ti', downMbps: 0.0, upMbps: 0.0, totalDataGb: 0.0 },
-  { id: '6', number: 6, name: 'Main-Station-06', group: 'Main Hall', status: 'Locked', ip: '192.168.1.106', mac: '00:1A:2B:3C:4D:63', cpu: 'i5-13600K', ram: '16GB DDR4', gpu: 'RTX 3060 Ti', downMbps: 0.0, upMbps: 0.0, totalDataGb: 0.0 },
-  { id: '7', number: 7, name: 'Main-Station-07', group: 'Main Hall', status: 'Available', ip: '192.168.1.107', mac: '00:1A:2B:3C:4D:64', cpu: 'i5-13600K', ram: '16GB DDR4', gpu: 'RTX 3060 Ti', downMbps: 0.2, upMbps: 0.0, totalDataGb: 0.1 },
-  { id: '8', number: 8, name: 'Main-Station-08', group: 'Main Hall', status: 'Offline', ip: '192.168.1.108', mac: '00:1A:2B:3C:4D:65', cpu: 'i5-13600K', ram: '16GB DDR4', gpu: 'RTX 3060 Ti', downMbps: 0.0, upMbps: 0.0, totalDataGb: 0.0 },
+  { id: '1', number: 1, name: 'VIP-Station-01', group: 'VIP Lounge', status: 'Occupied', user: 'عمر القحطاني', remainingMinutes: 84, ip: '192.168.1.101', mac: '00:1A:2B:3C:4D:5E', cpu: 'i9-14900K', ram: '32GB DDR5', gpu: 'RTX 4080', gpuTemp: 68, cpuTemp: 61, diskFreeGb: 412, downMbps: 12.4, upMbps: 2.1, totalDataGb: 3.4 },
+  { id: '2', number: 2, name: 'VIP-Station-02', group: 'VIP Lounge', status: 'Occupied', user: 'أحمد السامعي', remainingMinutes: 35, ip: '192.168.1.102', mac: '00:1A:2B:3C:4D:5F', cpu: 'i9-14900K', ram: '32GB DDR5', gpu: 'RTX 4080', gpuTemp: 74, cpuTemp: 66, diskFreeGb: 388, downMbps: 24.8, upMbps: 4.5, totalDataGb: 5.1 },
+  { id: '3', number: 3, name: 'Pro-Station-03', group: 'Pro Arena', status: 'Available', ip: '192.168.1.103', mac: '00:1A:2B:3C:4D:60', cpu: 'i7-14700K', ram: '32GB DDR5', gpu: 'RTX 4070 Ti', gpuTemp: 44, cpuTemp: 41, diskFreeGb: 462, downMbps: 0.1, upMbps: 0.0, totalDataGb: 0.2 },
+  { id: '4', number: 4, name: 'Pro-Station-04', group: 'Pro Arena', status: 'Occupied', user: 'كرت مؤقت #8921', remainingMinutes: 12, ip: '192.168.1.104', mac: '00:1A:2B:3C:4D:61', cpu: 'i7-14700K', ram: '32GB DDR5', gpu: 'RTX 4070 Ti', gpuTemp: 82, cpuTemp: 77, diskFreeGb: 320, downMbps: 45.2, upMbps: 8.7, totalDataGb: 12.8 },
+  { id: '5', number: 5, name: 'Pro-Station-05', group: 'Pro Arena', status: 'Reserved', ip: '192.168.1.105', mac: '00:1A:2B:3C:4D:62', cpu: 'i7-14700K', ram: '32GB DDR5', gpu: 'RTX 4070 Ti', gpuTemp: 42, cpuTemp: 40, diskFreeGb: 454, downMbps: 0.0, upMbps: 0.0, totalDataGb: 0.0 },
+  { id: '6', number: 6, name: 'Main-Station-06', group: 'Main Hall', status: 'Locked', ip: '192.168.1.106', mac: '00:1A:2B:3C:4D:63', cpu: 'i5-13600K', ram: '16GB DDR4', gpu: 'RTX 3060 Ti', gpuTemp: 40, cpuTemp: 38, diskFreeGb: 480, downMbps: 0.0, upMbps: 0.0, totalDataGb: 0.0 },
+  { id: '7', number: 7, name: 'Main-Station-07', group: 'Main Hall', status: 'Available', ip: '192.168.1.107', mac: '00:1A:2B:3C:4D:64', cpu: 'i5-13600K', ram: '16GB DDR4', gpu: 'RTX 3060 Ti', gpuTemp: 43, cpuTemp: 42, diskFreeGb: 442, downMbps: 0.2, upMbps: 0.0, totalDataGb: 0.1 },
+  { id: '8', number: 8, name: 'Main-Station-08', group: 'Main Hall', status: 'Offline', ip: '192.168.1.108', mac: '00:1A:2B:3C:4D:65', cpu: 'i5-13600K', ram: '16GB DDR4', gpu: 'RTX 3060 Ti', gpuTemp: 0, cpuTemp: 0, diskFreeGb: 450, downMbps: 0.0, upMbps: 0.0, totalDataGb: 0.0 },
 ];
 
 export const LiveDevicesPage: React.FC = () => {
@@ -253,10 +257,27 @@ export const LiveDevicesPage: React.FC = () => {
                 <StatusBadge status={station.status} size="sm" />
               </div>
 
-              {/* Hardware Quick Tags */}
-              <div className="py-2.5 flex items-center gap-1.5 text-[10px] font-mono text-cyber-textDark border-b border-cyber-border/30">
-                <span className="bg-cyber-deep px-1.5 py-0.5 rounded border border-cyber-border/40">{station.gpu}</span>
-                <span className="bg-cyber-deep px-1.5 py-0.5 rounded border border-cyber-border/40">{station.ram}</span>
+              {/* Hardware Quick Tags & Realtime Temperature */}
+              <div className="py-2.5 flex items-center justify-between text-[10px] font-mono border-b border-cyber-border/30">
+                <div className="flex items-center gap-1.5 text-cyber-textDark">
+                  <span className="bg-cyber-deep px-1.5 py-0.5 rounded border border-cyber-border/40">{station.gpu}</span>
+                  <span className="bg-cyber-deep px-1.5 py-0.5 rounded border border-cyber-border/40">{station.ram}</span>
+                </div>
+                {station.gpuTemp !== undefined && station.gpuTemp > 0 && (
+                  <span
+                    title={`حرارة كرت الشاشة: ${station.gpuTemp}°C | حرارة المعالج: ${station.cpuTemp}°C`}
+                    className={clsx(
+                      'px-1.5 py-0.5 rounded text-[10px] font-bold border transition-colors',
+                      station.gpuTemp > 80
+                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 animate-pulse'
+                        : station.gpuTemp > 70
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    )}
+                  >
+                    GPU {station.gpuTemp}°C
+                  </span>
+                )}
               </div>
 
               {/* User & Time Display */}
@@ -301,6 +322,7 @@ export const LiveDevicesPage: React.FC = () => {
                 <th className="py-3.5 px-4 text-start">الحالة</th>
                 <th className="py-3.5 px-4 text-start">العميل الحالي</th>
                 <th className="py-3.5 px-4 text-start">الوقت المتبقي</th>
+                <th className="py-3.5 px-4 text-start">حرارة العتاد (GPU)</th>
                 <th className="py-3.5 px-4 text-start">السرعة اللحظية</th>
                 <th className="py-3.5 px-4 text-start">عنوان IP</th>
                 <th className="py-3.5 px-4 text-end">إجراءات</th>
@@ -324,6 +346,24 @@ export const LiveDevicesPage: React.FC = () => {
                   <td className="py-3.5 px-4 text-cyber-textMain">{station.user || '—'}</td>
                   <td className="py-3.5 px-4 font-mono font-bold text-cyber-cyan">
                     {station.remainingMinutes !== undefined ? `${station.remainingMinutes} د` : '—'}
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-[11px]">
+                    {station.gpuTemp !== undefined && station.gpuTemp > 0 ? (
+                      <span
+                        className={clsx(
+                          'px-2 py-0.5 rounded text-[10px] font-bold border',
+                          station.gpuTemp > 80
+                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 animate-pulse'
+                            : station.gpuTemp > 70
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        )}
+                      >
+                        {station.gpuTemp}°C
+                      </span>
+                    ) : (
+                      <span className="text-cyber-textDark">—</span>
+                    )}
                   </td>
                   <td className="py-3.5 px-4 font-mono text-[11px] text-cyber-textDark">
                     ↓ {station.downMbps} / ↑ {station.upMbps} Mbps
@@ -383,6 +423,31 @@ export const LiveDevicesPage: React.FC = () => {
                   <Monitor className="w-3 h-3 text-purple-400" /> كرت الشاشة
                 </p>
                 <p className="font-semibold text-cyber-textMain font-mono">{selectedStation.gpu}</p>
+              </div>
+            </div>
+
+            {/* Live Hardware Telemetry Sensors */}
+            <div className="grid grid-cols-3 gap-2 p-3 bg-cyber-deep/80 rounded-xl border border-cyber-border text-center text-xs">
+              <div className="space-y-0.5">
+                <span className="text-cyber-textDark text-[10px]">حرارة كرت الشاشة</span>
+                <p className={clsx(
+                  'font-mono font-bold text-sm',
+                  (selectedStation.gpuTemp || 0) > 80 ? 'text-rose-400' : (selectedStation.gpuTemp || 0) > 70 ? 'text-amber-400' : 'text-emerald-400'
+                )}>
+                  {selectedStation.gpuTemp ? `${selectedStation.gpuTemp}°C` : '—'}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-cyber-textDark text-[10px]">حرارة المعالج</span>
+                <p className="font-mono font-bold text-sm text-cyan-400">
+                  {selectedStation.cpuTemp ? `${selectedStation.cpuTemp}°C` : '—'}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-cyber-textDark text-[10px]">المساحة المتبقية</span>
+                <p className="font-mono font-bold text-sm text-purple-400">
+                  {selectedStation.diskFreeGb ? `${selectedStation.diskFreeGb} GB` : '—'}
+                </p>
               </div>
             </div>
 

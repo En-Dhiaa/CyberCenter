@@ -66,6 +66,9 @@ public class InMemoryDataStore
                 IpAddress = $"192.168.1.{100 + i}",
                 Status = i == 6 ? DeviceStatus.Locked : DeviceStatus.Available,
                 HardwareSpecsJson = "{\"cpu\":\"i9-14900K\",\"ram\":\"32GB DDR5\",\"gpu\":\"RTX 4080\"}",
+                GpuTemperatureCelsius = Math.Round(52.0 + (i * 3.2), 1),
+                CpuTemperatureCelsius = Math.Round(46.0 + (i * 2.5), 1),
+                DiskFreeSpaceGb = Math.Round(500.0 - (i * 14.0), 1),
                 LastHeartbeatUtc = DateTime.UtcNow
             };
             Devices.TryAdd(device.Id, device);

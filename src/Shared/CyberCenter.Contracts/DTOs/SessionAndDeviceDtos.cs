@@ -23,7 +23,10 @@ public record DeviceHeartbeatDto(
     double DownloadSpeedMbps,
     double UploadSpeedMbps,
     long SessionConsumedBytes,
-    string AgentVersion
+    string AgentVersion,
+    double GpuTemperatureCelsius = 54.0,
+    double CpuTemperatureCelsius = 48.0,
+    double DiskFreeSpaceGb = 420.0
 );
 
 public record RemoteCommandDto(
