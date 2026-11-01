@@ -10,10 +10,10 @@ import { SystemSettingsPage } from '@/pages/SystemSettingsPage';
 import { SessionsPage } from '@/pages/SessionsPage';
 import { MembersPage } from '@/pages/MembersPage';
 import { TemporaryCardsPage } from '@/pages/TemporaryCardsPage';
+import { StoreCatalogPage } from '@/pages/StoreCatalogPage';
+import { KitchenKdsPage } from '@/pages/KitchenKdsPage';
 import { GenericPage } from '@/components/ui/GenericPage';
 import {
-  ShoppingBag,
-  ChefHat,
   Wallet,
   Receipt,
   BarChart3,
@@ -36,26 +36,8 @@ export const App: React.FC = () => {
           <Route path="sessions" element={<SessionsPage />} />
           <Route path="members" element={<MembersPage />} />
           <Route path="cards" element={<TemporaryCardsPage />} />
-          <Route
-            path="store"
-            element={
-              <GenericPage
-                title="المتجر والمنتجات (Store & Catalog)"
-                subtitle="إدارة قائمة المشروبات والمأكولات والإكسسوارات وأسعارها"
-                icon={ShoppingBag}
-              />
-            }
-          />
-          <Route
-            path="kitchen"
-            element={
-              <GenericPage
-                title="شاشة المطبخ والطلبات (Kitchen KDS)"
-                subtitle="استقبال ومتابعة تجهيز وتسليم طلبات الزوار الموجهة من الأجهزة"
-                icon={ChefHat}
-              />
-            }
-          />
+          <Route path="store" element={<StoreCatalogPage />} />
+          <Route path="kitchen" element={<KitchenKdsPage />} />
           <Route
             path="payments"
             element={

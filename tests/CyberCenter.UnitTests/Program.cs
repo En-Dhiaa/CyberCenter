@@ -23,7 +23,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 5 CLIENT SHELL & HUD) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 6 STORE & KITCHEN KDS) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -94,6 +94,12 @@ public class Program
         RunTest("ClientShell: Game catalog contains comprehensive categories and valid launch data", Test_ClientShell_GameCatalog_ContainsExpectedCategoriesAndGames);
         RunTest("ClientHUD: Countdown timer formats accurately and verifies alert thresholds", Test_ClientHUD_CountdownFormatting_CalculatesHoursMinutesSeconds);
         RunTest("LocalIPC: Station state DTO serializes and deserializes cleanly for local service IPC", Test_LocalIPC_ContractsSerialization_PreservesStationState);
+
+        // 15. Phase 6: Store & Kitchen KDS Tests
+        RunTest("Store: Create category and product updates catalog and audit log", Test_Store_CreateCategoryAndProduct_UpdatesInventory);
+        RunTest("Orders: Create station order deducts inventory stock and computes total", Test_Orders_CreateOrder_DeductsStockAndCalculatesTotal);
+        RunTest("Orders: Exceeding product stock is rejected with BadRequest", Test_Orders_InsufficientStock_RejectedWithBadRequest);
+        RunTest("Orders: KDS order status transitions between New, Preparing, and Delivered", Test_Orders_UpdateStatus_TransitionsToPreparingAndDelivered);
 
         stopwatch.Stop();
 
@@ -911,5 +917,136 @@ public class Program
 
         if (deserialized.Mode != CyberCenter.Contracts.IPC.StationScreenMode.ActiveSession)
             throw new Exception("ScreenMode enum mismatch after serialization.");
+    }
+
+    // 15. Phase 6: Store & Kitchen KDS Tests
+    private static void Test_Store_CreateCategoryAndProduct_UpdatesInventory()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new ProductsController(store, NullLogger<ProductsController>.Instance);
+
+        var catRes = controller.CreateCategory(new CreateCategoryRequestDto(
+            NameAr: "وجبات سريعة",
+            NameEn: "Fast Food",
+            Description: "ساندوتشات وبرجر طازج"
+        ));
+
+        if (catRes is not OkObjectResult okCat || okCat.Value is not ProductCategoryDto catDto)
+            throw new Exception("CreateCategory must return Ok with ProductCategoryDto.");
+
+        var prodRes = controller.CreateProduct(new CreateProductRequestDto(
+            CategoryId: catDto.Id,
+            NameAr: "شاورما دجاج سوبر",
+            NameEn: "Super Chicken Shawarma",
+            Description: "شاورما مع صوص الثوم والبطاطس",
+            Price: 1800.00m,
+            Cost: 1100.00m,
+            StockQuantity: 30,
+            IsAvailable: true
+        ));
+
+        if (prodRes is not CreatedAtActionResult created || created.Value is not ProductDto prodDto)
+            throw new Exception("CreateProduct must return CreatedAtActionResult with ProductDto.");
+
+        if (prodDto.Price != 1800.00m || prodDto.StockQuantity != 30)
+            throw new Exception("Created product fields mismatch.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "CreateProduct" && a.EntityId == prodDto.Id.ToString()))
+            throw new Exception("Audit log for CreateProduct was not recorded.");
+    }
+
+    private static void Test_Orders_CreateOrder_DeductsStockAndCalculatesTotal()
+    {
+        var store = new InMemoryDataStore();
+        var ordersController = new OrdersController(store, null, NullLogger<OrdersController>.Instance);
+
+        var device = store.Devices.Values.First();
+        var product = store.Products.Values.First(p => p.StockQuantity >= 10);
+        int initialStock = product.StockQuantity;
+        decimal unitPrice = product.Price;
+
+        var request = new CreateOrderRequestDto(
+            DeviceId: device.Id,
+            UserId: null,
+            CustomerNotes: "Extra sauce please",
+            Items: new List<CreateOrderItemDto>
+            {
+                new(product.Id, 3)
+            }
+        );
+
+        var res = ordersController.CreateOrder(request).GetAwaiter().GetResult();
+        if (res.Result is not OkObjectResult ok || ok.Value is not OrderDetailsDto orderDto)
+            throw new Exception("CreateOrder must return Ok with OrderDetailsDto.");
+
+        if (orderDto.TotalAmount != unitPrice * 3)
+            throw new Exception($"Order total calculation mismatch: expected {unitPrice * 3}, got {orderDto.TotalAmount}");
+
+        if (product.StockQuantity != initialStock - 3)
+            throw new Exception($"Stock not deducted correctly: expected {initialStock - 3}, got {product.StockQuantity}");
+
+        if (orderDto.Status != "New")
+            throw new Exception("New order status must be 'New'.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "CreateOrder" && a.EntityId == orderDto.Id.ToString()))
+            throw new Exception("Audit log for CreateOrder was not recorded.");
+    }
+
+    private static void Test_Orders_InsufficientStock_RejectedWithBadRequest()
+    {
+        var store = new InMemoryDataStore();
+        var ordersController = new OrdersController(store, null, NullLogger<OrdersController>.Instance);
+
+        var device = store.Devices.Values.First();
+        var product = store.Products.Values.First();
+        product.StockQuantity = 2; // only 2 left
+
+        var request = new CreateOrderRequestDto(
+            DeviceId: device.Id,
+            UserId: null,
+            CustomerNotes: null,
+            Items: new List<CreateOrderItemDto>
+            {
+                new(product.Id, 10) // requesting 10
+            }
+        );
+
+        var res = ordersController.CreateOrder(request).GetAwaiter().GetResult();
+        if (res.Result is not BadRequestObjectResult)
+            throw new Exception("Order with insufficient stock must be rejected with BadRequest.");
+    }
+
+    private static void Test_Orders_UpdateStatus_TransitionsToPreparingAndDelivered()
+    {
+        var store = new InMemoryDataStore();
+        var ordersController = new OrdersController(store, null, NullLogger<OrdersController>.Instance);
+
+        var device = store.Devices.Values.First();
+        var product = store.Products.Values.First(p => p.StockQuantity >= 5);
+
+        var createRes = ordersController.CreateOrder(new CreateOrderRequestDto(
+            DeviceId: device.Id,
+            UserId: null,
+            CustomerNotes: null,
+            Items: new List<CreateOrderItemDto> { new(product.Id, 1) }
+        )).GetAwaiter().GetResult();
+
+        var orderDto = (OrderDetailsDto)((OkObjectResult)createRes.Result!).Value!;
+
+        // 1. Move to Preparing
+        var prepRes = ordersController.UpdateOrderStatus(orderDto.Id, new UpdateOrderStatusRequestDto(OrderStatus.Preparing)).GetAwaiter().GetResult();
+        if (prepRes is not OkObjectResult okPrep || okPrep.Value is not OrderDetailsDto prepDto || prepDto.Status != "Preparing")
+            throw new Exception("Failed to transition status to Preparing.");
+
+        // 2. Move to Delivered
+        var delivRes = ordersController.UpdateOrderStatus(orderDto.Id, new UpdateOrderStatusRequestDto(OrderStatus.Delivered)).GetAwaiter().GetResult();
+        if (delivRes is not OkObjectResult okDeliv || okDeliv.Value is not OrderDetailsDto delivDto || delivDto.Status != "Delivered")
+            throw new Exception("Failed to transition status to Delivered.");
+
+        // 3. Verify KDS list now excludes the delivered order
+        var kdsRes = ordersController.GetKdsOrders();
+        var kdsOrders = (List<OrderDetailsDto>)((OkObjectResult)kdsRes.Result!).Value!;
+        if (kdsOrders.Any(o => o.Id == orderDto.Id))
+            throw new Exception("Delivered order should not appear in active KDS queue.");
     }
 }
