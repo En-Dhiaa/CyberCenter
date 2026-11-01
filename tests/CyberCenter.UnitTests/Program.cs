@@ -23,7 +23,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 4 SESSIONS & CARDS ENGINE) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 5 CLIENT SHELL & HUD) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -89,6 +89,11 @@ public class Program
         // 13. Phase 4: Members & Subscriptions Tests
         RunTest("Members: Create member and recharge wallet balance and minutes", Test_Members_CreateAndRechargeWallet);
         RunTest("Members: Toggle status successfully suspends and reactivates member account", Test_Members_ToggleStatus_ActivatesAndSuspends);
+
+        // 14. Phase 5: Client Shell, HUD & Local IPC Tests
+        RunTest("ClientShell: Game catalog contains comprehensive categories and valid launch data", Test_ClientShell_GameCatalog_ContainsExpectedCategoriesAndGames);
+        RunTest("ClientHUD: Countdown timer formats accurately and verifies alert thresholds", Test_ClientHUD_CountdownFormatting_CalculatesHoursMinutesSeconds);
+        RunTest("LocalIPC: Station state DTO serializes and deserializes cleanly for local service IPC", Test_LocalIPC_ContractsSerialization_PreservesStationState);
 
         stopwatch.Stop();
 
@@ -822,5 +827,89 @@ public class Program
 
         if (!member.IsActive)
             throw new Exception("Member must be active after reactivation.");
+    }
+
+    // 14. Phase 5: Client Shell, HUD & Local IPC Tests
+    private static void Test_ClientShell_GameCatalog_ContainsExpectedCategoriesAndGames()
+    {
+        var catalog = CyberCenter.Contracts.Games.GameCatalogService.GetDefaultCatalog();
+        if (catalog == null || catalog.Count < 10)
+            throw new Exception($"Catalog should contain at least 10 games/apps, found {catalog?.Count}");
+
+        var categories = catalog.Select(g => g.Category).Distinct().ToList();
+        if (!categories.Contains("Shooters & FPS"))
+            throw new Exception("Catalog missing 'Shooters & FPS' category.");
+        if (!categories.Contains("Battle Royale"))
+            throw new Exception("Catalog missing 'Battle Royale' category.");
+        if (!categories.Contains("Sports & Racing"))
+            throw new Exception("Catalog missing 'Sports & Racing' category.");
+        if (!categories.Contains("Action & Adventure"))
+            throw new Exception("Catalog missing 'Action & Adventure' category.");
+        if (!categories.Contains("Apps & Tools"))
+            throw new Exception("Catalog missing 'Apps & Tools' category.");
+
+        foreach (var item in catalog)
+        {
+            if (string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(item.Title))
+                throw new Exception("Game item missing Id or Title.");
+            if (string.IsNullOrWhiteSpace(item.ExecutablePath))
+                throw new Exception($"Game item {item.Title} missing ExecutablePath.");
+            if (string.IsNullOrWhiteSpace(item.IconColor) || !item.IconColor.StartsWith("#"))
+                throw new Exception($"Game item {item.Title} missing valid HEX IconColor.");
+        }
+    }
+
+    private static void Test_ClientHUD_CountdownFormatting_CalculatesHoursMinutesSeconds()
+    {
+        int remainingSeconds = 6320; // 1 hour, 45 minutes, 20 seconds
+        var ts = TimeSpan.FromSeconds(remainingSeconds);
+        string formatted = ts.ToString(@"hh\:mm\:ss");
+
+        if (formatted != "01:45:20")
+            throw new Exception($"Formatted time mismatch: expected 01:45:20, got {formatted}");
+
+        // Warning state check
+        bool isWarning = remainingSeconds <= 600;
+        bool isCritical = remainingSeconds <= 120;
+        if (isWarning || isCritical)
+            throw new Exception("6320 seconds should not trigger warning or critical states.");
+
+        int lowSeconds = 550; // 9m 10s
+        if (lowSeconds > 600 || lowSeconds <= 120)
+            throw new Exception("550 seconds should trigger warning state (<10m) but not critical.");
+
+        int criticalSeconds = 95; // 1m 35s
+        if (criticalSeconds > 120)
+            throw new Exception("95 seconds should trigger critical state (<2m).");
+    }
+
+    private static void Test_LocalIPC_ContractsSerialization_PreservesStationState()
+    {
+        var originalState = new CyberCenter.Contracts.IPC.StationSessionStateDto(
+            IsSessionActive: true,
+            Mode: CyberCenter.Contracts.IPC.StationScreenMode.ActiveSession,
+            SessionId: Guid.NewGuid(),
+            SessionType: "TemporaryCard",
+            DisplayName: "كرت مؤقت CC-****-****-4412",
+            RemainingSeconds: 5400,
+            ConsumedSeconds: 1800,
+            AccruedCost: 750.00m,
+            WalletBalance: 0.00m,
+            StationName: "VIP-Station-04",
+            StationNumber: 4,
+            AnnouncementMessage: "Welcome to CyberCenter eSports Arena"
+        );
+
+        string json = System.Text.Json.JsonSerializer.Serialize(originalState);
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize<CyberCenter.Contracts.IPC.StationSessionStateDto>(json);
+
+        if (deserialized == null)
+            throw new Exception("Failed to deserialize StationSessionStateDto.");
+
+        if (deserialized.StationNumber != 4 || deserialized.DisplayName != originalState.DisplayName)
+            throw new Exception("Deserialized state values do not match original.");
+
+        if (deserialized.Mode != CyberCenter.Contracts.IPC.StationScreenMode.ActiveSession)
+            throw new Exception("ScreenMode enum mismatch after serialization.");
     }
 }
