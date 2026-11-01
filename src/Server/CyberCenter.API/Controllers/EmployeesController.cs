@@ -155,3 +155,4 @@ public class EmployeesController : ControllerBase
         return Ok(new { success = true, message = $"تم حذف الموظف {user.FullName} بنجاح." });
     }
 }
+

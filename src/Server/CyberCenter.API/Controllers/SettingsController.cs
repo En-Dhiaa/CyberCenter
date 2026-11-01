@@ -49,3 +49,4 @@ public class SettingsController : ControllerBase
         return Ok(_currentSettings);
     }
 }
+

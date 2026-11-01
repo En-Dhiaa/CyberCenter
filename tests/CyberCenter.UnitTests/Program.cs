@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using CyberCenter.Agent;
 using CyberCenter.API.Controllers;
+using CyberCenter.API.Hubs;
 using CyberCenter.Application.Services;
 using CyberCenter.Contracts.DTOs;
 using CyberCenter.Contracts.Enums;
@@ -7,6 +9,7 @@ using CyberCenter.Domain.Entities;
 using CyberCenter.Infrastructure.Persistence;
 using CyberCenter.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CyberCenter.UnitTests;
@@ -20,7 +23,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 2 AUTH & ADMIN) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 3 DEVICES & AGENT) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -59,6 +62,19 @@ public class Program
         // 7. Phase 2: Audit Logs & System Settings Tests
         RunTest("AuditLogs: Immutable audit trail records actions and supports search", Test_AuditLogs_SearchAndFilter);
         RunTest("Settings: Updating system settings succeeds and logs audit entry", Test_Settings_UpdateAndAudit);
+
+        // 8. Phase 3: Signed Device Commands & Replay Protection Tests
+        RunTest("DeviceCommand: Signed command verifies with matching secret key", Test_DeviceCommand_SignAndVerify_Success);
+        RunTest("DeviceCommand: Tampered payload fails cryptographic verification", Test_DeviceCommand_TamperedPayload_Rejected);
+        RunTest("DeviceCommand: Wrong secret key fails verification", Test_DeviceCommand_WrongSecretKey_Rejected);
+        RunTest("DeviceCommand: Stale command older than max age is rejected", Test_DeviceCommand_StaleExpired_Rejected);
+
+        // 9. Phase 3: Agent Command Execution & State Transition Tests
+        RunTest("Agent: Executes LockStation command and updates state to Locked", Test_Agent_ProcessCommand_Lock);
+        RunTest("Agent: Rejects invalid or unsigned command", Test_Agent_ProcessCommand_RejectUnsigned);
+
+        // 10. Phase 3: Device Groups & Fleet Management Tests
+        RunTest("DeviceGroups: Create and query device groups with correct pricing", Test_DeviceGroups_CreationAndListing);
 
         stopwatch.Stop();
 
@@ -267,7 +283,6 @@ public class Program
         if (result.Result is not UnauthorizedObjectResult)
             throw new Exception("Wrong password must result in Unauthorized (401).");
 
-        // Verify audit log recorded
         if (!store.AuditLogs.Any(a => a.Action == "FailedLoginAttempt"))
             throw new Exception("Failed login must be recorded in AuditLogs.");
     }
@@ -279,7 +294,6 @@ public class Program
         var tokenGen = new NativeTokenGenerator("MySuperSecretKey_2026_EnterpriseSecureToken!");
         var logger = NullLogger<AuthController>.Instance;
 
-        // Create inactive user
         var inactive = new User
         {
             Username = "disabled_staff",
@@ -392,5 +406,147 @@ public class Program
 
         if (!store.AuditLogs.Any(a => a.Action == "UpdateSystemSettings"))
             throw new Exception("Updating settings must generate an AuditLog entry.");
+    }
+
+    // Phase 3 Tests
+    private static void Test_DeviceCommand_SignAndVerify_Success()
+    {
+        var deviceId = Guid.NewGuid();
+        var secretKey = "StationSecretKey_987654321!";
+
+        var signedCommand = DeviceCommandSigner.CreateSignedCommand(
+            deviceId: deviceId,
+            commandType: DeviceCommandType.LockStation,
+            payload: "Lock reason",
+            deviceSecretKey: secretKey);
+
+        if (signedCommand == null || string.IsNullOrWhiteSpace(signedCommand.Signature))
+            throw new Exception("Signed command or signature was null.");
+
+        var isValid = DeviceCommandSigner.VerifyCommandSignature(signedCommand, secretKey);
+        if (!isValid)
+            throw new Exception("Signed command failed HMAC-SHA256 signature verification.");
+    }
+
+    private static void Test_DeviceCommand_TamperedPayload_Rejected()
+    {
+        var deviceId = Guid.NewGuid();
+        var secretKey = "StationSecretKey_987654321!";
+
+        var original = DeviceCommandSigner.CreateSignedCommand(
+            deviceId: deviceId,
+            commandType: DeviceCommandType.LockStation,
+            payload: "Original payload",
+            deviceSecretKey: secretKey);
+
+        var tampered = original with { Payload = "Malicious altered payload" };
+
+        if (DeviceCommandSigner.VerifyCommandSignature(tampered, secretKey))
+            throw new Exception("Tampered payload should have failed signature verification.");
+    }
+
+    private static void Test_DeviceCommand_WrongSecretKey_Rejected()
+    {
+        var deviceId = Guid.NewGuid();
+        var correctKey = "StationSecretKey_987654321!";
+        var wrongKey = "AttackerSecretKey_1111111!";
+
+        var command = DeviceCommandSigner.CreateSignedCommand(
+            deviceId: deviceId,
+            commandType: DeviceCommandType.UnlockStation,
+            payload: null,
+            deviceSecretKey: correctKey);
+
+        if (DeviceCommandSigner.VerifyCommandSignature(command, wrongKey))
+            throw new Exception("Command verified with wrong secret key - security failure!");
+    }
+
+    private static void Test_DeviceCommand_StaleExpired_Rejected()
+    {
+        var deviceId = Guid.NewGuid();
+        var secretKey = "StationSecretKey_987654321!";
+
+        var command = DeviceCommandSigner.CreateSignedCommand(
+            deviceId: deviceId,
+            commandType: DeviceCommandType.RestartComputer,
+            payload: null,
+            deviceSecretKey: secretKey);
+
+        // Simulate 2 minute old command with maxAge = 60s
+        var staleCommand = command with { IssuedAtUtc = DateTime.UtcNow.AddMinutes(-2) };
+
+        if (DeviceCommandSigner.VerifyCommandSignature(staleCommand, secretKey, maxAgeSeconds: 60))
+            throw new Exception("Stale expired command should have been rejected to prevent replay attacks.");
+    }
+
+    private static void Test_Agent_ProcessCommand_Lock()
+    {
+        var logger = NullLogger<Worker>.Instance;
+        var worker = new Worker(logger);
+
+        // Generate signed command with worker's internal or matching secret
+        var field = typeof(Worker).GetField("_deviceSecretKey", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var secret = (string)field!.GetValue(worker)!;
+        var deviceIdField = typeof(Worker).GetField("_deviceId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var devId = (Guid)deviceIdField!.GetValue(worker)!;
+
+        var cmd = DeviceCommandSigner.CreateSignedCommand(devId, DeviceCommandType.LockStation, "Lock test", secret);
+        var processed = worker.ProcessIncomingRemoteCommand(cmd);
+
+        if (!processed)
+            throw new Exception("Valid signed command was not processed by Agent.");
+
+        var statusField = typeof(Worker).GetField("_currentStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var status = (DeviceStatus)statusField!.GetValue(worker)!;
+
+        if (status != DeviceStatus.Locked)
+            throw new Exception("Agent status was not updated to Locked.");
+    }
+
+    private static void Test_Agent_ProcessCommand_RejectUnsigned()
+    {
+        var logger = NullLogger<Worker>.Instance;
+        var worker = new Worker(logger);
+
+        var fakeCommand = new RemoteCommandDto(
+            CommandId: Guid.NewGuid(),
+            DeviceId: Guid.NewGuid(),
+            CommandType: DeviceCommandType.ShutdownComputer,
+            Payload: null,
+            Nonce: "fake-nonce",
+            Signature: "forged-invalid-sig",
+            IssuedAtUtc: DateTime.UtcNow
+        );
+
+        var processed = worker.ProcessIncomingRemoteCommand(fakeCommand);
+        if (processed)
+            throw new Exception("Agent should have rejected fake unsigned command!");
+    }
+
+    private static void Test_DeviceGroups_CreationAndListing()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new DevicesController(store, null!, NullLogger<DevicesController>.Instance);
+
+        var newGroup = new DeviceGroup
+        {
+            Name = "Racing Simulators",
+            Description = "كراسي محاكاة القيادة الاحترافية مع مقود Force Feedback",
+            DefaultHourlyRate = 1200.00m
+        };
+
+        var actionRes = controller.CreateDeviceGroup(newGroup);
+        if (actionRes is not OkObjectResult ok || ok.Value is not DeviceGroup created)
+            throw new Exception("Creating device group must return OkObjectResult.");
+
+        if (created.Name != "Racing Simulators" || created.DefaultHourlyRate != 1200.00m)
+            throw new Exception("Created group properties mismatch.");
+
+        var groupsRes = controller.GetDeviceGroups();
+        if (groupsRes.Result is not OkObjectResult okList || okList.Value is not List<DeviceGroupDto> list)
+            throw new Exception("Querying device groups must return list.");
+
+        if (!list.Any(g => g.Name == "Racing Simulators"))
+            throw new Exception("Newly created group not found in list.");
     }
 }

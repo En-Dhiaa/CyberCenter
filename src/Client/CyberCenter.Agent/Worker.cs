@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using CyberCenter.Application.Services;
 using CyberCenter.Contracts.DTOs;
 using CyberCenter.Contracts.Enums;
 using Microsoft.Extensions.Hosting;
@@ -11,6 +12,7 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly HttpClient _httpClient;
     private readonly Guid _deviceId = Guid.NewGuid();
+    private readonly string _deviceSecretKey;
     private DeviceStatus _currentStatus = DeviceStatus.Available;
     private const string ServerBaseUrl = "http://localhost:5000";
 
@@ -18,11 +20,12 @@ public class Worker : BackgroundService
     {
         _logger = logger;
         _httpClient = new HttpClient { BaseAddress = new Uri(ServerBaseUrl), Timeout = TimeSpan.FromSeconds(5) };
+        _deviceSecretKey = Guid.NewGuid().ToString("N");
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("CyberCenter.Agent worker service starting on workstation {MachineName} (Device ID: {DeviceId})...",
+        _logger.LogInformation("CyberCenter.Agent Windows service started on station {MachineName} (ID: {DeviceId}).",
             Environment.MachineName, _deviceId);
         return base.StartAsync(cancellationToken);
     }
@@ -50,19 +53,57 @@ public class Worker : BackgroundService
                 var response = await _httpClient.PostAsJsonAsync("/api/v1/devices/heartbeat", heartbeat, stoppingToken);
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogDebug("Heartbeat successfully accepted by central server.");
-                }
-                else
-                {
-                    _logger.LogWarning("Heartbeat returned status: {Status}", response.StatusCode);
+                    _logger.LogDebug("Station heartbeat acknowledged by central server.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Server unreachable during heartbeat cycle (retrying): {Message}", ex.Message);
+                _logger.LogWarning("Heartbeat dispatch deferred (network retry): {Message}", ex.Message);
             }
 
             await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
         }
+    }
+
+    public bool ProcessIncomingRemoteCommand(RemoteCommandDto command)
+    {
+        // 1. Verify Cryptographic Signature and Freshness
+        if (!DeviceCommandSigner.VerifyCommandSignature(command, _deviceSecretKey))
+        {
+            _logger.LogError("SECURITY REJECTION: Command {Type} signature or nonce verification failed!", command.CommandType);
+            return false;
+        }
+
+        // 2. Execute Allowlisted System Action
+        switch (command.CommandType)
+        {
+            case DeviceCommandType.LockStation:
+                _currentStatus = DeviceStatus.Locked;
+                _logger.LogWarning("STATION LOCKED by signed central command.");
+                break;
+
+            case DeviceCommandType.UnlockStation:
+                _currentStatus = DeviceStatus.Available;
+                _logger.LogInformation("STATION UNLOCKED by signed central command.");
+                break;
+
+            case DeviceCommandType.DisplayMessage:
+                _logger.LogInformation("DISPLAY NOTIFICATION ALERT: {Message}", command.Payload);
+                break;
+
+            case DeviceCommandType.RestartComputer:
+                _logger.LogWarning("RESTART COMPUTER authorized and signed by SuperAdmin.");
+                break;
+
+            case DeviceCommandType.ShutdownComputer:
+                _logger.LogWarning("SHUTDOWN COMPUTER authorized and signed by SuperAdmin.");
+                break;
+
+            default:
+                _logger.LogWarning("Unsupported command type received: {Type}", command.CommandType);
+                return false;
+        }
+
+        return true;
     }
 }

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\CyberCenter.Contracts\CyberCenter.Contracts.csproj" />
+    <ProjectReference Include="..\..\Server\CyberCenter.Application\CyberCenter.Application.csproj" />
   </ItemGroup>
 
 </Project>

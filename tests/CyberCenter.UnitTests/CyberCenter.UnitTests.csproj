@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\Server\CyberCenter.Application\CyberCenter.Application.csproj" />
     <ProjectReference Include="..\..\src\Server\CyberCenter.Infrastructure\CyberCenter.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Server\CyberCenter.API\CyberCenter.API.csproj" />
+    <ProjectReference Include="..\..\src\Client\CyberCenter.Agent\CyberCenter.Agent.csproj" />
   </ItemGroup>
 
 </Project>
