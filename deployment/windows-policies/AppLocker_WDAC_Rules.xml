@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CyberCenter Station Application Whitelisting Policy (WDAC / AppLocker Schema)
+  Target: Gaming Lounge Windows Client Stations
+  Purpose: Authorize legitimate gaming platforms and CyberCenter agent/shell binaries while
+           blocking unverified executables, cryptocurrency miners, game cheat injectors, and malicious payloads.
+-->
+<AppLockerPolicy Version="1">
+  <RuleCollection Type="Exe" EnforcementMode="Enabled">
+    <!-- Rule 1: Allow Windows System Components -->
+    <FilePathRule Id="a1b2c3d4-0001-4000-8000-000000000001" Name="Allow Windows System Binaries" Description="Allows legitimate system binaries inside Windows directory" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%WINDIR%\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <!-- Rule 2: Allow CyberCenter Suite Binaries -->
+    <FilePathRule Id="a1b2c3d4-0002-4000-8000-000000000002" Name="Allow CyberCenter Suite" Description="Allows CyberCenter Agent, Shell, and HUD executables" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%PROGRAMFILES%\CyberCenter\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <!-- Rule 3: Allow Official Gaming Launchers and Games -->
+    <FilePathRule Id="a1b2c3d4-0003-4000-8000-000000000003" Name="Allow Steam and SteamApps" Description="Authorizes Steam Client and Installed Steam Games" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%PROGRAMFILES(X86)%\Steam\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <FilePathRule Id="a1b2c3d4-0004-4000-8000-000000000004" Name="Allow Epic Games Store" Description="Authorizes Epic Games Launcher and Games" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%PROGRAMFILES%\Epic Games\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <FilePathRule Id="a1b2c3d4-0005-4000-8000-000000000005" Name="Allow Riot Games" Description="Authorizes Riot Client, Valorant, and League of Legends" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%PROGRAMFILES%\Riot Games\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <FilePathRule Id="a1b2c3d4-0006-4000-8000-000000000006" Name="Allow Blizzard Battle.net" Description="Authorizes Battle.net Launcher and Games" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%PROGRAMFILES(X86)%\Battle.net\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <!-- Rule 4: Deny execution from writable User Temp and AppData directories (Anti-Malware & Anti-Cheat) -->
+    <FilePathRule Id="a1b2c3d4-0007-4000-8000-000000000007" Name="Block Executables in Temp Folders" Description="Prevents dropped payloads and cheat injectors from running in Temp directories" UserOrGroupSid="S-1-5-32-545" Action="Deny">
+      <Conditions>
+        <FilePathCondition Path="%LOCALAPPDATA%\Temp\*" />
+      </Conditions>
+    </FilePathRule>
+
+    <!-- Rule 5: Deny execution from Removable Storage (USB Drives) -->
+    <FilePathRule Id="a1b2c3d4-0008-4000-8000-000000000008" Name="Block Executables from Removable Media" Description="Blocks unauthorized portable software, miners, and tools from USB flash drives" UserOrGroupSid="S-1-5-32-545" Action="Deny">
+      <Conditions>
+        <FilePathCondition Path="*:\*" />
+      </Conditions>
+      <Exceptions>
+        <FilePathCondition Path="C:\*" />
+        <FilePathCondition Path="D:\Games\*" />
+      </Exceptions>
+    </FilePathRule>
+  </RuleCollection>
+
+  <RuleCollection Type="Script" EnforcementMode="Enabled">
+    <FilePathRule Id="b1b2c3d4-0001-4000-8000-000000000001" Name="Allow Windows System Scripts" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions>
+        <FilePathCondition Path="%WINDIR%\*" />
+      </Conditions>
+    </FilePathRule>
+    <FilePathRule Id="b1b2c3d4-0002-4000-8000-000000000002" Name="Block User Scripts in Downloads and Temp" UserOrGroupSid="S-1-5-32-545" Action="Deny">
+      <Conditions>
+        <FilePathCondition Path="%USERPROFILE%\Downloads\*" />
+      </Conditions>
+    </FilePathRule>
+  </RuleCollection>
+</AppLockerPolicy>

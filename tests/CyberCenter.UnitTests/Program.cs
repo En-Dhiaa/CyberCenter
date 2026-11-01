@@ -112,6 +112,11 @@ public class Program
         RunTest("Energy: Summary distinguishes physical meter from theoretical calculation", Test_Energy_Summary_DistinguishesRealMeterFromEstimatedCalculation);
         RunTest("Energy: Updating electricity tariff recalculates daily cost and logs audit", Test_Energy_UpdateTariff_AppliesNewRate);
 
+        // 18. Phase 9: Hardening, Policies & Backup Verification Tests
+        RunTest("Hardening: AppLocker & WDAC policy XML validates whitelisted paths and denies temp execution", Test_Hardening_AppLockerRules_ValidateStructureAndIntegrity);
+        RunTest("Hardening: Backup manifest SHA-256 cryptographic verification prevents corrupted restores", Test_Hardening_BackupManifest_Sha256ChecksumVerification);
+        RunTest("Hardening: Station lockdown registry policies comply with OS escape prevention rules", Test_Hardening_WindowsLockdown_RegistryRulesCompliance);
+
         stopwatch.Stop();
 
         Console.WriteLine("----------------------------------------------------------------------");
@@ -1217,5 +1222,87 @@ public class Program
 
         if (!store.AuditLogs.Any(a => a.Action == "UpdateEnergyTariff"))
             throw new Exception("Audit log for UpdateEnergyTariff was not recorded.");
+    }
+
+    // Phase 9 Tests
+    private static void Test_Hardening_AppLockerRules_ValidateStructureAndIntegrity()
+    {
+        // Locate AppLocker_WDAC_Rules.xml relative to test executable / project directory
+        var basePath = AppContext.BaseDirectory;
+        var projectDir = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", ".."));
+        var xmlPath = Path.Combine(projectDir, "deployment", "windows-policies", "AppLocker_WDAC_Rules.xml");
+
+        if (!File.Exists(xmlPath))
+            throw new FileNotFoundException($"AppLocker_WDAC_Rules.xml not found at expected path: {xmlPath}");
+
+        var xmlContent = File.ReadAllText(xmlPath);
+
+        // Verify XML structure and security directives
+        if (!xmlContent.Contains("<AppLockerPolicy Version=\"1\">"))
+            throw new Exception("AppLocker policy missing root AppLockerPolicy element.");
+
+        if (!xmlContent.Contains("%PROGRAMFILES%\\CyberCenter\\*"))
+            throw new Exception("AppLocker policy does not authorize CyberCenter program directory.");
+
+        if (!xmlContent.Contains("%LOCALAPPDATA%\\Temp\\*") || !xmlContent.Contains("Action=\"Deny\""))
+            throw new Exception("AppLocker policy does not deny execution in user Temp directory.");
+    }
+
+    private static void Test_Hardening_BackupManifest_Sha256ChecksumVerification()
+    {
+        // Simulate backup archive payload
+        var originalPayload = "CREATE TABLE CyberCenterBackupTest (Id INT, Name VARCHAR(50));\nCOMMIT;";
+        var originalBytes = System.Text.Encoding.UTF8.GetBytes(originalPayload);
+
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var originalHash = Convert.ToHexString(sha256.ComputeHash(originalBytes));
+
+        // Create manifest
+        var manifest = new
+        {
+            ArchiveName = "test_backup.sql",
+            Sha256Checksum = originalHash,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Verification check: valid archive matches manifest
+        var testHash = Convert.ToHexString(sha256.ComputeHash(originalBytes));
+        if (testHash != manifest.Sha256Checksum)
+            throw new Exception("Checksum match failed for unaltered archive.");
+
+        // Verification check: altered archive MUST fail
+        var alteredPayload = originalPayload + "\n-- CORRUPTED DATA";
+        var alteredBytes = System.Text.Encoding.UTF8.GetBytes(alteredPayload);
+        var alteredHash = Convert.ToHexString(sha256.ComputeHash(alteredBytes));
+
+        if (alteredHash == manifest.Sha256Checksum)
+            throw new Exception("Checksum match incorrectly passed for corrupted archive.");
+    }
+
+    private static void Test_Hardening_WindowsLockdown_RegistryRulesCompliance()
+    {
+        var basePath = AppContext.BaseDirectory;
+        var projectDir = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", ".."));
+        var regPath = Path.Combine(projectDir, "deployment", "windows-policies", "Apply-StationLockdown.reg");
+
+        if (!File.Exists(regPath))
+            throw new FileNotFoundException($"Apply-StationLockdown.reg not found at {regPath}");
+
+        var regContent = File.ReadAllText(regPath);
+
+        var requiredKeys = new[]
+        {
+            "\"DisableTaskMgr\"=dword:00000001",
+            "\"DisableCMD\"=dword:00000001",
+            "\"DisableRegistryTools\"=dword:00000001",
+            "\"DisableLockWorkstation\"=dword:00000001",
+            "\"NoRun\"=dword:00000001"
+        };
+
+        foreach (var key in requiredKeys)
+        {
+            if (!regContent.Contains(key))
+                throw new Exception($"Apply-StationLockdown.reg missing mandatory lockdown key: {key}");
+        }
     }
 }

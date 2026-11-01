@@ -1,0 +1,38 @@
+Windows Registry Editor Version 5.00
+
+; ==============================================================================
+; CyberCenter Windows Station Lockdown Rollback (Admin Maintenance Mode)
+; Purpose: Restores normal Windows behavior, re-enables Task Manager, CMD,
+;          Registry Tools, Run dialog, and Control Panel for maintenance.
+; ==============================================================================
+
+; 1. Restore Task Manager, Lock Workstation, Change Password, and Regedit
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\System]
+"DisableTaskMgr"=-
+"DisableLockWorkstation"=-
+"DisableChangePassword"=-
+"DisableRegistryTools"=-
+
+; 2. Restore Command Prompt
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\System]
+"DisableCMD"=-
+
+; 3. Restore Explorer Normal Functions
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
+"NoRun"=-
+"NoControlPanel"=-
+"NoViewContextMenu"=-
+"NoFolderOptions"=-
+"NoClose"=-
+"NoFind"=-
+"NoFileMenu"=-
+"NoDrives"=-
+
+; 4. Restore Desktop Customizations
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop]
+"NoChangingWallPaper"=-
+
+; 5. Restore Error Reporting Defaults
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting]
+"DontShowUI"=-
+"Disabled"=-

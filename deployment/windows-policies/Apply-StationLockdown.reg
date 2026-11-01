@@ -1,0 +1,40 @@
+Windows Registry Editor Version 5.00
+
+; ==============================================================================
+; CyberCenter Windows Station Lockdown Policies (Production Hardening)
+; Target Account: Standard Guest User (CyberGuest)
+; Purpose: Restrict administrative utilities, prevent OS escape, disable TaskMgr,
+;          CMD, Regedit, Win+R, and Control Panel while permitting gaming launchers.
+; ==============================================================================
+
+; 1. Disable Task Manager, Lock Workstation, and Change Password in Windows Security Screen (Ctrl+Alt+Del)
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\System]
+"DisableTaskMgr"=dword:00000001
+"DisableLockWorkstation"=dword:00000001
+"DisableChangePassword"=dword:00000001
+"DisableRegistryTools"=dword:00000001
+
+; 2. Disable Command Prompt and Batch Script Execution
+[HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\System]
+"DisableCMD"=dword:00000001
+
+; 3. Disable Windows Explorer Dangerous Entry Points
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
+"NoRun"=dword:00000001
+"NoControlPanel"=dword:00000001
+"NoViewContextMenu"=dword:00000001
+"NoFolderOptions"=dword:00000001
+"NoClose"=dword:00000001
+"NoFind"=dword:00000001
+"NoFileMenu"=dword:00000001
+"NoDrives"=dword:00000004
+"HideClock"=dword:00000000
+
+; 4. Lock Desktop Customizations and Wallpaper
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop]
+"NoChangingWallPaper"=dword:00000001
+
+; 5. Disable Windows Error Reporting UI popups that can steal focus from gaming sessions
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting]
+"DontShowUI"=dword:00000001
+"Disabled"=dword:00000001
