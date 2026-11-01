@@ -23,7 +23,7 @@ public class Program
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("======================================================================");
-        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 7 FINANCE & ACCOUNTING) ⚡");
+        Console.WriteLine(" ⚡ CYBERCENTER AUTOMATED TEST SUITE (PHASE 8 NETWORK & ENERGY) ⚡");
         Console.WriteLine("======================================================================");
         Console.ResetColor();
 
@@ -105,6 +105,12 @@ public class Program
         RunTest("Finance: Record operational expense updates ledger and audit trail", Test_Finance_CreateExpense_RecordsLedgerAndAudit);
         RunTest("Finance: Summary accurately computes Gross Revenue, Expenses, and Net Profit", Test_Finance_GetSummary_CalculatesPnlAndNetProfit);
         RunTest("Finance: Lock monthly closing secures period and prevents duplicate closing", Test_Finance_LockMonthlyClosing_SecuresMonthAgainstModification);
+
+        // 17. Phase 8: Network & Energy Estimation Tests
+        RunTest("Network: Live station metrics and bandwidth throttling limiter", Test_Network_GetLiveMetricsAndThrottleStation_LimitsBandwidth);
+        RunTest("Network: Router gateway status returns valid WAN metrics", Test_Network_RouterStatus_ReturnsGatewayAndWanMetrics);
+        RunTest("Energy: Summary distinguishes physical meter from theoretical calculation", Test_Energy_Summary_DistinguishesRealMeterFromEstimatedCalculation);
+        RunTest("Energy: Updating electricity tariff recalculates daily cost and logs audit", Test_Energy_UpdateTariff_AppliesNewRate);
 
         stopwatch.Stop();
 
@@ -1126,5 +1132,90 @@ public class Program
         var duplicateRes = controller.LockMonthlyClosing(lockReq);
         if (duplicateRes is not BadRequestObjectResult)
             throw new Exception("Re-locking an already locked month must be rejected with BadRequest.");
+    }
+
+    // 17. Phase 8: Network & Energy Estimation Tests
+    private static void Test_Network_GetLiveMetricsAndThrottleStation_LimitsBandwidth()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new NetworkController(store, NullLogger<NetworkController>.Instance);
+
+        var metricsRes = controller.GetLiveStationMetrics();
+        if (metricsRes.Result is not OkObjectResult ok || ok.Value is not List<StationNetworkMetricDto> list)
+            throw new Exception("GetLiveStationMetrics must return list.");
+
+        if (list.Count != store.Devices.Count)
+            throw new Exception("Metrics count mismatch with devices count.");
+
+        var targetStation = list.First();
+
+        // Throttle station to 25 Mbps
+        var throttleRes = controller.ThrottleStation(new ThrottleStationRequestDto(targetStation.DeviceId, 25));
+        if (throttleRes is not OkObjectResult)
+            throw new Exception("ThrottleStation must return Ok.");
+
+        // Query again to verify limit applied
+        var updatedMetricsRes = controller.GetLiveStationMetrics();
+        var updatedList = (List<StationNetworkMetricDto>)((OkObjectResult)updatedMetricsRes.Result!).Value!;
+        var updatedStation = updatedList.First(s => s.DeviceId == targetStation.DeviceId);
+
+        if (!updatedStation.IsThrottled || updatedStation.SpeedLimitMbps != 25)
+            throw new Exception("Station throttling was not applied correctly.");
+
+        if (!store.AuditLogs.Any(a => a.Action == "ThrottleStationBandwidth" && a.EntityId == targetStation.DeviceId.ToString()))
+            throw new Exception("Audit log for ThrottleStationBandwidth was not recorded.");
+    }
+
+    private static void Test_Network_RouterStatus_ReturnsGatewayAndWanMetrics()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new NetworkController(store, NullLogger<NetworkController>.Instance);
+
+        var res = controller.GetRouterStatus();
+        if (res.Result is not OkObjectResult ok || ok.Value is not RouterGatewayStatusDto status)
+            throw new Exception("GetRouterStatus must return RouterGatewayStatusDto.");
+
+        if (!status.GatewayModel.Contains("MikroTik") || status.Status != "Online")
+            throw new Exception("Router gateway status or model mismatch.");
+
+        if (status.TotalWanDownloadMbps <= 0 || status.TotalWanUploadMbps <= 0)
+            throw new Exception("WAN throughput speeds must be greater than zero.");
+    }
+
+    private static void Test_Energy_Summary_DistinguishesRealMeterFromEstimatedCalculation()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new EnergyController(store, NullLogger<EnergyController>.Instance);
+
+        var res = controller.GetEnergySummary();
+        if (res.Result is not OkObjectResult ok || ok.Value is not EnergySummaryDto summary)
+            throw new Exception("GetEnergySummary must return EnergySummaryDto.");
+
+        if (summary.TotalRealMeterKwh <= 0 || summary.TotalEstimatedKwh <= 0)
+            throw new Exception("Meter readings must be greater than zero.");
+
+        // Physical meter should be greater than purely mathematical hardware estimation due to AC overhead
+        if (summary.TotalRealMeterKwh <= summary.TotalEstimatedKwh)
+            throw new Exception("Physical meter reading must reflect overhead beyond theoretical calculation.");
+
+        if (summary.TotalEstimatedCostToday != Math.Round((decimal)summary.TotalEstimatedKwh * summary.TariffRatePerKwh, 2))
+            throw new Exception("Energy cost calculation mismatch.");
+    }
+
+    private static void Test_Energy_UpdateTariff_AppliesNewRate()
+    {
+        var store = new InMemoryDataStore();
+        var controller = new EnergyController(store, NullLogger<EnergyController>.Instance);
+
+        var updateRes = controller.UpdateTariff(new UpdateEnergyTariffRequestDto(350.00m));
+        if (updateRes is not OkObjectResult)
+            throw new Exception("UpdateTariff must return Ok.");
+
+        var summary = (EnergySummaryDto)((OkObjectResult)controller.GetEnergySummary().Result!).Value!;
+        if (summary.TariffRatePerKwh != 350.00m)
+            throw new Exception($"Tariff rate was not updated: expected 350, got {summary.TariffRatePerKwh}");
+
+        if (!store.AuditLogs.Any(a => a.Action == "UpdateEnergyTariff"))
+            throw new Exception("Audit log for UpdateEnergyTariff was not recorded.");
     }
 }

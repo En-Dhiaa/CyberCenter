@@ -16,11 +16,8 @@ import { PaymentsPage } from '@/pages/PaymentsPage';
 import { ExpensesPage } from '@/pages/ExpensesPage';
 import { FinancialReportsPage } from '@/pages/FinancialReportsPage';
 import { MonthlyClosingPage } from '@/pages/MonthlyClosingPage';
-import { GenericPage } from '@/components/ui/GenericPage';
-import {
-  Activity,
-  Zap,
-} from 'lucide-react';
+import { NetworkMonitorPage } from '@/pages/NetworkMonitorPage';
+import { EnergyMonitorPage } from '@/pages/EnergyMonitorPage';
 
 export const App: React.FC = () => {
   return (
@@ -42,26 +39,8 @@ export const App: React.FC = () => {
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="reports" element={<FinancialReportsPage />} />
           <Route path="closing" element={<MonthlyClosingPage />} />
-          <Route
-            path="network"
-            element={
-              <GenericPage
-                title="مراقبة الشبكة (Network Monitor)"
-                subtitle="مراقبة استهلاك الباندويث وسرعات الأجهزة وتكامل الراوتر"
-                icon={Activity}
-              />
-            }
-          />
-          <Route
-            path="energy"
-            element={
-              <GenericPage
-                title="مراقبة الطاقة والكهرباء (Energy Monitor)"
-                subtitle="تسجيل ومقارنة استهلاك العدادات الذكية الفعلي مع التقدير الحسابي للأجهزة"
-                icon={Zap}
-              />
-            }
-          />
+          <Route path="network" element={<NetworkMonitorPage />} />
+          <Route path="energy" element={<EnergyMonitorPage />} />
           {/* Phase 2 Pages */}
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="audit" element={<AuditLogsPage />} />
