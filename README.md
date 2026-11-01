@@ -139,3 +139,4 @@ CyberCenter/
 - **Node.js (v18+)** و **npm**
 - **PostgreSQL 15+**
 - نظام تشغيل **Windows 10 / 11** لمحطات العملاء.
+

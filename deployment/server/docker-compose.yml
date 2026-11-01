@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  cybercenter-postgres:
+    image: postgres:16-alpine
+    container_name: cybercenter-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: cybercenter_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: CyberCenterPostgres2026!
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cybercenter-api:
+    build:
+      context: ../../
+      dockerfile: deployment/server/Dockerfile
+    container_name: cybercenter-api
+    restart: always
+    depends_on:
+      cybercenter-postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=cybercenter-postgres;Port=5432;Database=cybercenter_db;Username=postgres;Password=CyberCenterPostgres2026!;
+    ports:
+      - "5000:5000"
+
+volumes:
+  postgres_data:
+

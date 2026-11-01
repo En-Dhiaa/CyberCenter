@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CyberCenter.UnitTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared\CyberCenter.Contracts\CyberCenter.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Server\CyberCenter.Domain\CyberCenter.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Server\CyberCenter.Application\CyberCenter.Application.csproj" />
+    <ProjectReference Include="..\..\src\Server\CyberCenter.Infrastructure\CyberCenter.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

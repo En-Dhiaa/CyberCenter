@@ -105,3 +105,4 @@
 | **سلامة الألعاب (Anti-Cheat Compliance)** | - حظر تام لأي تقنية حقن ذاكرة (No DLL Injection / No Memory Hooking).<br>- تشغيل شريط الـ HUD بأسلوب Borderless Transparent Overlay متوافق مع Riot Vanguard و Easy Anti-Cheat. |
 | **تجربة المستخدم واللغات (i18n & UX)** | - دعم كامل ومتقن للغة العربية (RTL) مع خط Cairo / IBM Plex Sans.<br>- دعم كامل للغة الإنجليزية (LTR) مع تبديل لحظي بنقرة زر واحدة.<br>- واجهة Dark Premium فخمة مريحة للعين في البيئات المظلمة. |
 | **التوافقية (Compatibility)** | - الخادم: يعمل على Windows Server أو Linux (Ubuntu / Debian / Docker).<br>- العميل: يعمل بكفاءة على Windows 10 (64-bit) و Windows 11 بكافة التحديثات الحديثة. |
+

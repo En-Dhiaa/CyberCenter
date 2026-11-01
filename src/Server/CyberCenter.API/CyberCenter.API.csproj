@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CyberCenter.API</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\CyberCenter.Contracts\CyberCenter.Contracts.csproj" />
+    <ProjectReference Include="..\CyberCenter.Application\CyberCenter.Application.csproj" />
+    <ProjectReference Include="..\CyberCenter.Infrastructure\CyberCenter.Infrastructure.csproj" />
+    <ProjectReference Include="..\CyberCenter.Workers\CyberCenter.Workers.csproj" />
+  </ItemGroup>
+
+</Project>

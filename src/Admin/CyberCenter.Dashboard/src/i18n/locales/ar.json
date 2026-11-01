@@ -1,0 +1,99 @@
+{
+  "common": {
+    "appName": "CyberCenter",
+    "appTagline": "نظام الإدارة والتحكم المركزي",
+    "language": "اللغة",
+    "arabic": "العربية",
+    "english": "English",
+    "searchPlaceholder": "ابحث عن جهاز، عضو، أو طلب...",
+    "live": "مباشر",
+    "connected": "متصل بالخادم",
+    "disconnected": "منقطع عن الخادم",
+    "notifications": "الإشعارات",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "refresh": "تحديث",
+    "viewAll": "عرض الكل",
+    "minutes": "دقيقة",
+    "hours": "ساعة",
+    "currency": "ر.ي",
+    "actions": "الإجراءات",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "save": "حفظ",
+    "status": "الحالة",
+    "loading": "جاري التحميل...",
+    "superAdmin": "المدير العام",
+    "admin": "مشرف وردية",
+    "mbps": "ميجابت/ث"
+  },
+  "nav": {
+    "dashboard": "لوحة المؤشرات",
+    "liveDevices": "الأجهزة الحية",
+    "sessions": "سجل الجلسات",
+    "members": "الأعضاء والاشتراكات",
+    "temporaryCards": "الكروت المؤقتة",
+    "cardPrinting": "طباعة الكروت",
+    "store": "المتجر والمنتجات",
+    "kitchen": "شاشة المطبخ والطلبات",
+    "payments": "المدفوعات والمحافظ",
+    "expenses": "المصروفات",
+    "financialReports": "التقارير المالية",
+    "monthlyClosing": "الإقفال الشهري",
+    "networkMonitoring": "مراقبة الشبكة",
+    "energyMonitoring": "مراقبة الطاقة",
+    "employees": "الموظفون والصلاحيات",
+    "auditLogs": "سجل العمليات والتدقيق",
+    "systemSettings": "إعدادات النظام",
+    "backupRestore": "النسخ الاحتياطي"
+  },
+  "status": {
+    "Available": "متاح",
+    "Occupied": "مشغول",
+    "Reserved": "محجوز",
+    "Maintenance": "صيانة",
+    "Offline": "غير متصل",
+    "Locked": "مقفل",
+    "Error": "خطأ"
+  },
+  "dashboard": {
+    "stats": {
+      "totalDevices": "إجمالي الأجهزة",
+      "activeSessions": "الجلسات النشطة",
+      "todayRevenue": "إيرادات اليوم",
+      "storeSales": "مبيعات المتجر",
+      "networkThroughput": "معدل تدفق الشبكة",
+      "systemAlerts": "تنبيهات النظام"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "openSession": "فتح جلسة جديدة",
+      "generateCards": "توليد كروت فورية",
+      "addExpense": "تسجيل مصروف",
+      "lockAll": "قفل جميع الأجهزة"
+    },
+    "liveFleet": {
+      "title": "مراقبة المحطات اللحظية",
+      "filterAll": "الكل",
+      "filterAvailable": "متاح",
+      "filterOccupied": "مشغول",
+      "filterOffline": "غير متصل"
+    }
+  },
+  "devices": {
+    "station": "محطة",
+    "currentUser": "المستخدم الحالي",
+    "guest": "زائر",
+    "remainingTime": "الوقت المتبقي",
+    "sessionDuration": "مدة الجلسة",
+    "dataUsage": "استهلاك البيانات",
+    "unlock": "فتح",
+    "lock": "قفل",
+    "extendTime": "تمديد +30 د",
+    "sendMessage": "إرسال رسالة",
+    "restart": "إعادة تشغيل",
+    "shutdown": "إيقاف التشغيل",
+    "viewDetails": "التفاصيل"
+  }
+}
+

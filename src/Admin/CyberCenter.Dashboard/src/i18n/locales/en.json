@@ -1,0 +1,99 @@
+{
+  "common": {
+    "appName": "CyberCenter",
+    "appTagline": "Central Management & Fleet Control",
+    "language": "Language",
+    "arabic": "العربية",
+    "english": "English",
+    "searchPlaceholder": "Search station, member, order...",
+    "live": "LIVE",
+    "connected": "Connected to Server",
+    "disconnected": "Disconnected from Server",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "logout": "Log Out",
+    "refresh": "Refresh",
+    "viewAll": "View All",
+    "minutes": "min",
+    "hours": "hr",
+    "currency": "YER",
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "status": "Status",
+    "loading": "Loading...",
+    "superAdmin": "Super Admin",
+    "admin": "Shift Admin",
+    "mbps": "Mbps"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "liveDevices": "Live Stations",
+    "sessions": "Sessions History",
+    "members": "Members & Plans",
+    "temporaryCards": "Temporary Cards",
+    "cardPrinting": "Card Printing",
+    "store": "Store & Catalog",
+    "kitchen": "Kitchen KDS",
+    "payments": "Payments & Wallets",
+    "expenses": "Expenses",
+    "financialReports": "Financial Reports",
+    "monthlyClosing": "Monthly Closing",
+    "networkMonitoring": "Network Monitor",
+    "energyMonitoring": "Energy Monitor",
+    "employees": "Staff & Roles",
+    "auditLogs": "Audit Logs",
+    "systemSettings": "System Settings",
+    "backupRestore": "Backup & Restore"
+  },
+  "status": {
+    "Available": "Available",
+    "Occupied": "Occupied",
+    "Reserved": "Reserved",
+    "Maintenance": "Maintenance",
+    "Offline": "Offline",
+    "Locked": "Locked",
+    "Error": "Error"
+  },
+  "dashboard": {
+    "stats": {
+      "totalDevices": "Total Stations",
+      "activeSessions": "Active Sessions",
+      "todayRevenue": "Today's Revenue",
+      "storeSales": "Store Sales",
+      "networkThroughput": "Network Throughput",
+      "systemAlerts": "System Alerts"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "openSession": "Open New Session",
+      "generateCards": "Batch Cards",
+      "addExpense": "Add Expense",
+      "lockAll": "Lock All Stations"
+    },
+    "liveFleet": {
+      "title": "Live Station Fleet",
+      "filterAll": "All",
+      "filterAvailable": "Available",
+      "filterOccupied": "Occupied",
+      "filterOffline": "Offline"
+    }
+  },
+  "devices": {
+    "station": "Station",
+    "currentUser": "Current User",
+    "guest": "Guest",
+    "remainingTime": "Remaining Time",
+    "sessionDuration": "Duration",
+    "dataUsage": "Data Usage",
+    "unlock": "Unlock",
+    "lock": "Lock",
+    "extendTime": "Extend +30m",
+    "sendMessage": "Message",
+    "restart": "Restart",
+    "shutdown": "Shutdown",
+    "viewDetails": "Details"
+  }
+}
+

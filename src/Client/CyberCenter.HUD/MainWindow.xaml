@@ -1,0 +1,34 @@
+<Window x:Class="CyberCenter.HUD.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CyberCenter Gaming HUD"
+        Height="48" Width="360"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Left="800" Top="12">
+    <Border Background="#E60E131F" BorderBrush="#3306B6D4" BorderThickness="1" CornerRadius="12" Padding="12,6">
+        <DockPanel VerticalAlignment="Center">
+            <!-- Left: Icon & Station -->
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                <Ellipse Width="8" Height="8" Fill="#10B981" Margin="0,0,8,0"/>
+                <TextBlock Text="ST-04" FontWeight="Bold" FontSize="11" Foreground="#06B6D4" Margin="0,0,12,0"/>
+            </StackPanel>
+
+            <!-- Center: Remaining Time -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="الوقت المتبقي: " FontSize="11" Foreground="#94A3B8"/>
+                <TextBlock Text="01:45:20" FontWeight="Bold" FontSize="13" Foreground="#F8FAFC" FontFamily="Consolas, monospace"/>
+            </StackPanel>
+
+            <!-- Right: Quick Menu Trigger -->
+            <Border Background="#141C2E" BorderBrush="#253350" BorderThickness="1" CornerRadius="6" Padding="6,2" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <TextBlock Text="F8 القائمة" FontSize="10" FontWeight="Bold" Foreground="#06B6D4"/>
+            </Border>
+        </DockPanel>
+    </Border>
+</Window>
+
