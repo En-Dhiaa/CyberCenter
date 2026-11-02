@@ -19,6 +19,7 @@ import { MonthlyClosingPage } from '@/pages/MonthlyClosingPage';
 import { NetworkMonitorPage } from '@/pages/NetworkMonitorPage';
 import { EnergyMonitorPage } from '@/pages/EnergyMonitorPage';
 import { BackupRestorePage } from '@/pages/BackupRestorePage';
+import { DevicePairingPage } from '@/pages/DevicePairingPage';
 
 export const App: React.FC = () => {
   return (
@@ -31,6 +32,7 @@ export const App: React.FC = () => {
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="devices" element={<LiveDevicesPage />} />
+          <Route path="pairing" element={<DevicePairingPage />} />
           <Route path="sessions" element={<SessionsPage />} />
           <Route path="members" element={<MembersPage />} />
           <Route path="cards" element={<TemporaryCardsPage />} />

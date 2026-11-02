@@ -321,11 +321,10 @@ export const TemporaryCardsPage: React.FC = () => {
                       key={m}
                       type="button"
                       onClick={() => setDurationMinutes(m)}
-                      className={`py-1.5 rounded-lg border text-center transition-all ${
-                        durationMinutes === m
+                      className={`py-1.5 rounded-lg border text-center transition-all ${durationMinutes === m
                           ? 'bg-cyber-cyan text-black font-bold border-cyber-cyan'
                           : 'bg-cyber-card border-cyber-border text-cyber-textMuted hover:text-cyber-textMain'
-                      }`}
+                        }`}
                     >
                       {m} د
                     </button>

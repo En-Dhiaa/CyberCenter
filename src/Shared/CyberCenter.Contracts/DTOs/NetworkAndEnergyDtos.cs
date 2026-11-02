@@ -55,3 +55,4 @@ public record EnergySummaryDto(
 public record UpdateEnergyTariffRequestDto(
     decimal NewTariffRatePerKwh
 );
+

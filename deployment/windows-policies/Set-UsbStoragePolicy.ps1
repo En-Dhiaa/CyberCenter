@@ -52,3 +52,4 @@ catch {
     Write-Error "Failed to update USB storage policy: $_"
     exit 1
 }
+

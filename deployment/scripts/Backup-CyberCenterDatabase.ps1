@@ -162,3 +162,4 @@ return @{
     Sha256       = $FileHash
     Size         = $FileSize
 }
+

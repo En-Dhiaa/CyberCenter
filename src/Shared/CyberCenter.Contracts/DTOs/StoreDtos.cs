@@ -92,3 +92,4 @@ public record OrderDetailsDto(
 public record UpdateOrderStatusRequestDto(
     OrderStatus Status
 );
+

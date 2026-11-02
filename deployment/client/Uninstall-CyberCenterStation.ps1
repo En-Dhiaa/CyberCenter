@@ -62,3 +62,4 @@ if (Test-Path $RemoveReg) {
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host " CyberCenter Station Uninstallation Completed. " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
+

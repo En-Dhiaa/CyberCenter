@@ -66,3 +66,4 @@ public record LockMonthlyClosingRequestDto(
     int Month,
     string? Notes
 );
+

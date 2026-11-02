@@ -20,6 +20,7 @@ import {
   Settings,
   ShieldCheck,
   Database,
+  Wifi,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -36,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       items: [
         { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
         { to: '/devices', icon: MonitorPlay, label: t('nav.liveDevices') },
+        { to: '/pairing', icon: Wifi, label: 'ربط الأجهزة الميدانية' },
         { to: '/sessions', icon: History, label: t('nav.sessions') },
       ],
     },

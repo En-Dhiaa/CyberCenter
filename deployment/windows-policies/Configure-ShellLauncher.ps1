@@ -100,3 +100,4 @@ else {
 }
 
 Write-Host "Configuration finished successfully." -ForegroundColor Cyan
+

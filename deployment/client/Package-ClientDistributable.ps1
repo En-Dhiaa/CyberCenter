@@ -106,3 +106,4 @@ Set-Content -Path "${ZipArtifact}.sha256" -Value "$ZipHash  CyberCenter-Station-
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host " Station Client Packaging Completed Successfully! " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
+

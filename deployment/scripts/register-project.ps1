@@ -10,3 +10,4 @@ $filtered += [PSCustomObject]@{
 }
 $filtered | ConvertTo-Json -Depth 5 | Set-Content -Path $RegistryPath -Encoding UTF8
 Write-Host "CyberCenter registered successfully in $RegistryPath" -ForegroundColor Green
+

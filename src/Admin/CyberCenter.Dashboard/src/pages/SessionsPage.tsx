@@ -158,22 +158,20 @@ export const SessionsPage: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-cyber-border/60 text-xs font-medium pb-2">
         <button
           onClick={() => setActiveTab('active')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'active'
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'active'
               ? 'bg-cyber-cyan/15 border border-cyber-cyan/40 text-cyber-cyan font-bold'
               : 'text-cyber-textMuted hover:text-cyber-textMain'
-          }`}
+            }`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>الجلسات النشطة حالياً ({activeSessions.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-            activeTab === 'history'
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'history'
               ? 'bg-cyber-cyan/15 border border-cyber-cyan/40 text-cyber-cyan font-bold'
               : 'text-cyber-textMuted hover:text-cyber-textMain'
-          }`}
+            }`}
         >
           <Calendar className="w-4 h-4" />
           <span>أرشيف الجلسات المكتملة</span>
